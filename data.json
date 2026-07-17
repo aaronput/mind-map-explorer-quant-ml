@@ -1,0 +1,1767 @@
+{
+ "generated_from": "index.html",
+ "branches": {
+  "r": {
+   "n": "Root",
+   "c": "#9B8AD6"
+  },
+  "f": {
+   "n": "Foundations",
+   "c": "#7E9CD8"
+  },
+  "d": {
+   "n": "Data & Labels",
+   "c": "#56B3A7"
+  },
+  "s": {
+   "n": "Learners",
+   "c": "#D9A648"
+  },
+  "a": {
+   "n": "Alpha Modelling",
+   "c": "#D97F6A"
+  },
+  "p": {
+   "n": "Portfolio Construction",
+   "c": "#A98BD6"
+  },
+  "k": {
+   "n": "Risk Management",
+   "c": "#C06C9C"
+  },
+  "v": {
+   "n": "Validation & Production",
+   "c": "#8FB573"
+  },
+  "c": {
+   "n": "Canon & Practitioners",
+   "c": "#9AA3B2"
+  }
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "p": null,
+   "l": "ML FOR QUANT FINANCE",
+   "b": "r",
+   "sum": "A practitioner map of machine learning in quantitative finance: what actually survives contact with markets in alpha modelling, portfolio construction and risk management — and why the winning methods look more like disciplined statistics than like deep learning.",
+   "why": "Finance is a hostile domain for machine learning. The signal-to-noise ratio is orders of magnitude below vision or language; the data-generating process drifts and is adaptive — deploying a model changes the market it models; effective sample sizes are small because observations overlap and regimes repeat rarely. Methods that dominate other domains do not port. The map is organized around that constraint: the foundations explain why finance is different, the middle branches cover the machinery (data, learners, alpha, portfolio, risk), and the validation branch covers the discipline that separates research from fiction.",
+   "rule": "Use the map: click a node to read it; click the chevron to expand its children. Eight branches — Foundations (why finance breaks ML), Data & Labels (the dataset is the model), Learners (the toolbox, ranked honestly), Alpha Modelling (forecast to money), Portfolio Construction (forecasts meet estimation error), Risk Management (ML in the risk stack, and the risk of ML), Validation & Production (the discipline layer), and Canon (who to read and how much to trust them). Recurring skeleton: why it matters, the method, desk implementation, and where genuinely contested — the case for, the skeptics, and where practice has landed.",
+   "cites": [
+    [
+     "Hierarchy of evidence",
+     "Live P&L → paper trading → true OOS → CPCV → K-fold CV → single-path walk-forward → in-sample fit",
+     "Method"
+    ],
+    [
+     "Scope",
+     "Public-domain sources only: books, journals, working papers, practitioner writing. No proprietary results.",
+     "Method"
+    ]
+   ],
+   "x": [
+    "f-snr",
+    "f-hier",
+    "c-gappy",
+    "c-ldp"
+   ]
+  },
+  {
+   "id": "f",
+   "p": "root",
+   "l": "I · Foundations",
+   "b": "f",
+   "sum": "The constraints that make financial ML its own discipline: weak signals, shifting distributions, adaptive counterparties, and the ease of fooling yourself with a backtest.",
+   "why": "Most ML failures in finance are framing failures, not modelling failures: the researcher imported assumptions — stationarity, abundant independent samples, a passive environment — that hold in the domains where ML earned its reputation and fail in markets. Every downstream choice in this map (shrinkage, ensembles, purged validation, economic priors) is a response to one of the constraints in this branch. Read it first; it is the toolkit for evaluating everything else.",
+   "x": [
+    "f-snr",
+    "f-bv",
+    "f-multi",
+    "f-hier"
+   ]
+  },
+  {
+   "id": "f-snr",
+   "p": "f",
+   "l": "Low signal-to-noise ratio",
+   "b": "f",
+   "sum": "Return prediction R² is measured in fractions of a percent: Gu–Kelly–Xiu report monthly out-of-sample R² around 0.4% for their best models — and that counts as a landmark result. Everything about method choice follows from this number.",
+   "why": "In vision, the label is essentially a deterministic function of the input; in markets, competition removes predictability, so whatever signal survives is small by construction. When noise dominates, the variance of the estimator — not its bias — is the binding constraint, which inverts the usual ML instinct toward flexible models. Low SNR is why shrinkage beats flexibility, why ensembles beat single models, and why a fitted deep net and a ridge regression often produce indistinguishable live Sharpe.",
+   "rule": "Working magnitudes: monthly cross-sectional OOS R² of 0.3–1% is strong; information coefficients of 0.02–0.10 are the professional range; anything dramatically better is a bug until proven otherwise. The implication is architectural: regularize hard, average widely, prefer many weak signals across many assets (breadth) to one strong signal, and evaluate by portfolio-level statistics rather than pointwise loss.",
+   "hf": "Desks grow the effective sample by pooling the cross-section — one panel model over thousands of stocks rather than one model per name — and predict relative ranks rather than levels. Evaluation is by IC and decile spreads, not MSE; a model can improve MSE and make no money.",
+   "cites": [
+    [
+     "Gu, Kelly & Xiu",
+     "Empirical Asset Pricing via Machine Learning, RFS 33(5), 2020",
+     "Paper"
+    ],
+    [
+     "Israel, Kelly & Moskowitz",
+     "Can Machines Learn Finance?, J. Investment Mgmt, 2020",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-bv",
+    "a-ic",
+    "a-gkx",
+    "d-uniq"
+   ]
+  },
+  {
+   "id": "f-nonstat",
+   "p": "f",
+   "l": "Non-stationarity & regime change",
+   "b": "f",
+   "sum": "The joint distribution drifts: regimes, structural breaks, microstructure changes, policy shifts. The stationarity assumption underneath train/test methodology is at best locally true.",
+   "why": "ML theory prices generalization on the premise that training and deployment samples come from the same distribution. Markets violate this constantly — the 2010s taught models that duration hedges equities; 2022 fired those models. The practical tension is unresolvable in principle: longer histories buy sample size at the cost of relevance, shorter windows buy relevance at the cost of noise. Every scheme below is a different point on that frontier, not a solution.",
+   "rule": "Standard responses: rolling or expanding training windows with time-decay weights; features engineered to be distribution-stable (ranks, z-scores against trailing windows); regime conditioning — separate models or separate weights per detected state; ensembling across training windows so no single lookback dominates; and modest model complexity, because flexible fits to a moving target degrade fastest.",
+   "hf": "Desks accept that models have half-lives and plan retraining cadence with the same seriousness as the original fit. The regime question is usually handled above the model — leverage and gross exposure gated by a regime overlay — rather than inside it.",
+   "x": [
+    "k-regime",
+    "d-stat",
+    "v-retrain",
+    "f-adapt"
+   ]
+  },
+  {
+   "id": "f-adapt",
+   "p": "f",
+   "l": "Reflexivity & adaptive markets",
+   "b": "f",
+   "sum": "Markets learn back. Alpha is a claim on other participants' behaviour, and both publication and deployment change the data-generating process. McLean–Pontiff is the measured version: anomaly returns fall roughly half after publication.",
+   "why": "This is the deepest difference from natural-science ML: the phenomenon responds to being modelled. Lo's Adaptive Markets Hypothesis frames predictability as an ecology — inefficiencies are resources that get competed away and occasionally replenished by structural change or new participant flows. A signal is therefore an asset with a depletion schedule, and the rate of depletion is a function of how visible and how capacity-constrained the signal is.",
+   "rule": "McLean & Pontiff (2016): out-of-sample anomaly returns decline roughly a quarter post-sample and over half post-publication; decay is fastest in liquid, low-cost-to-arbitrage names. The corollary for ML: any edge that can be found by standard tooling on standard data should be presumed already crowded.",
+   "hf": "Implications: research secrecy has real option value; signal libraries carry shelf-life accounting; crowding monitors (correlation of returns across quant funds, positioning data, borrow utilization) sit beside performance monitors.",
+   "cites": [
+    [
+     "McLean & Pontiff",
+     "Does Academic Research Destroy Stock Return Predictability?, JF 71(1), 2016",
+     "Paper"
+    ],
+    [
+     "Lo",
+     "The Adaptive Markets Hypothesis, JPM 30th Anniversary, 2004",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "a-decay",
+    "k-crowd",
+    "f-prior"
+   ]
+  },
+  {
+   "id": "f-bv",
+   "p": "f",
+   "l": "Bias–variance under low SNR",
+   "b": "f",
+   "sum": "With weak signals and few effective observations, estimator variance dominates expected error: accept bias, shrink aggressively, average everything. This one tradeoff explains most financial-ML architecture choices.",
+   "why": "Expected out-of-sample error decomposes into bias², variance, and irreducible noise. When irreducible noise is enormous relative to signal, a flexible model spends its capacity fitting noise — its variance term swamps whatever bias reduction it bought. Shrinkage toward zero is not conservatism; it is the Bayesian posterior under the empirically correct prior that most apparent predictability is spurious.",
+   "rule": "Consequences, in rough order of importance: ridge-style dense shrinkage suits return prediction (many tiny correlated effects) better than aggressive sparsity; ensembles reduce variance without adding bias, which is why they are close to a free lunch here; shallow trees with heavy learning-rate shrinkage beat deep ones; and model comparisons must be judged against the variance of the performance estimate itself — most \"model A beats model B\" results in finance are inside the noise band.",
+   "hf": "The practical grid: ridge over OLS, boosted trees constrained to depth 2–4 with low learning rates, nets kept shallow with dropout and early stopping, and everything averaged over seeds and training windows before it touches capital.",
+   "cites": [
+    [
+     "Hastie, Tibshirani & Friedman",
+     "The Elements of Statistical Learning, 2nd ed., 2009",
+     "Book"
+    ]
+   ],
+   "x": [
+    "s-lin",
+    "s-ens",
+    "p-cov",
+    "a-voc"
+   ]
+  },
+  {
+   "id": "f-two",
+   "p": "f",
+   "l": "Econometrics vs ML — two cultures",
+   "b": "f",
+   "sum": "Breiman's \"two cultures\" — inference about a data model vs prediction by algorithm — plays out daily in quant finance, which needs both: predict returns like an ML person, explain risk and attribute P&L like an econometrician.",
+   "why": "Academic asset pricing was regression-first for decades: estimate betas, test significance, argue about standard errors. The ML reframing asks only for out-of-sample predictive accuracy and lets the functional form be a black box. The synthesis that works: economic and econometric structure (factor models, no-arbitrage, covariance stationarity assumptions) is the scarce, valuable input; ML supplies flexible conditional expectations inside that structure. Structure without flexibility underfits; flexibility without structure gets eaten by the multiple-testing problem.",
+   "hf": "A common resolution on desks: the forecast may be nonlinear and opaque, but attribution and risk stay linear — positions are decomposed against a factor model regardless of what generated them, because the CIO meeting runs on attribution, not on SHAP plots.",
+   "cites": [
+    [
+     "Breiman",
+     "Statistical Modeling: The Two Cultures, Statistical Science 16(3), 2001",
+     "Paper"
+    ],
+    [
+     "Nagel",
+     "Machine Learning in Asset Pricing, Princeton UP, 2021",
+     "Book"
+    ]
+   ],
+   "x": [
+    "f-prior",
+    "c-kx",
+    "k-mrisk"
+   ]
+  },
+  {
+   "id": "f-prior",
+   "p": "f",
+   "l": "Economic priors vs data mining",
+   "b": "f",
+   "sum": "The strongest regularizer in finance is an economic rationale: a signal with a coherent story about who is on the other side deserves a weaker multiple-testing haircut than a mined artifact with identical backtest statistics.",
+   "why": "Priors restrict the hypothesis space, and a smaller hypothesis space means fewer effective trials, which means the same t-stat carries more evidence. The standard taxonomy of durable edges: risk premia (paid for bearing risk others shed), behavioural (persistent because the counterparty bias is structural), and flow/structural (index rebalancing, hedging demand, mandate constraints). A mined signal with no seat in this taxonomy is a claim that a free lunch persists for no reason.",
+   "hf": "Research review boards institutionalize this: before a backtest is trusted, the researcher answers — whose money does this take, why does it persist, what is its capacity, and what would kill it. ML does not change the questions; it changes how many candidate signals reach them.",
+   "cites": [
+    [
+     "Israel, Kelly & Moskowitz",
+     "Can Machines Learn Finance?, JIM 2020 — economic structure as the scarce input",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-multi",
+    "a-decay",
+    "f-two"
+   ]
+  },
+  {
+   "id": "f-multi",
+   "p": "f",
+   "l": "Multiple testing & the factor zoo",
+   "b": "f",
+   "sum": "Hundreds of published \"factors,\" most false, redundant or decayed. With enough trials something always backtests beautifully; the haircut for search intensity is mandatory arithmetic, not optional humility.",
+   "why": "Harvey, Liu & Zhu catalogued 300+ published factors and argued the t-stat bar must rise with the number of tries — their working threshold is t ≥ 3 for new factors. The same logic applies with more force inside a fund, where a single researcher's parameter sweeps can generate thousands of implicit trials that never appear in any paper trail unless the process forces them to.",
+   "rule": "The operational tools: the Deflated Sharpe Ratio (Bailey & López de Prado) corrects an observed Sharpe for the number of trials, backtest length and non-normality — reporting the probability the true Sharpe exceeds zero given the search; the Probability of Backtest Overfitting (PBO) framework estimates how often the best in-sample strategy underperforms out-of-sample. Both require knowing how many things were tried, which is why trial logging is a data problem before it is a statistics problem.",
+   "hf": "Serious shops run trial registries: every backtest configuration is logged automatically by the research platform, and the DSR is computed against the true trial count, not the flattering one. A Sharpe 1.5 backtest after 5 trials and after 5,000 trials are different objects.",
+   "cites": [
+    [
+     "Harvey, Liu & Zhu",
+     "…and the Cross-Section of Expected Returns, RFS 29(1), 2016",
+     "Paper"
+    ],
+    [
+     "Bailey & López de Prado",
+     "The Deflated Sharpe Ratio, JPM 40(5), 2014",
+     "Paper"
+    ],
+    [
+     "Bailey, Borwein, López de Prado & Zhu",
+     "The Probability of Backtest Overfitting, J. Comp. Finance, 2017",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "v-proto",
+    "f-hier",
+    "s-tune"
+   ]
+  },
+  {
+   "id": "f-hier",
+   "p": "f",
+   "l": "Hierarchy of evidence",
+   "b": "f",
+   "sum": "Live P&L beats paper trading beats true out-of-sample beats combinatorial CV beats K-fold beats a single walk-forward path beats in-sample fit. Every claim in this map should be discounted by where its evidence sits.",
+   "why": "Finance has no registered clinical trials, so the discipline must be self-imposed. Publication bias operates at every level: journals print positive results, vendors show surviving backtests, PMs pitch their best paths. The hierarchy is the antidote — not because lower tiers are worthless, but because each step down roughly doubles the discount you should apply.",
+   "rule": "Tiering: (1) audited live track record at size; (2) live/paper trading of the exact production system; (3) genuinely untouched holdout used once; (4) combinatorial purged CV distributions; (5) purged K-fold point estimates; (6) single-path walk-forward — one draw from a path distribution, closer to anecdote than statistics; (7) in-sample fit — evidence of nothing beyond flexibility. Vendor and academic backtests enter at tier 5–7 regardless of internal quality, because you cannot audit their trial count.",
+   "hf": "Allocation committees encode this: new strategies start at token size and earn capital as evidence migrates up the hierarchy; no backtest, however deflated, jumps the queue past live months.",
+   "x": [
+    "v-cpcv",
+    "v-live",
+    "f-multi"
+   ]
+  },
+  {
+   "id": "d",
+   "p": "root",
+   "l": "II · Data & Labels",
+   "b": "d",
+   "sum": "In financial ML the dataset is the model: point-in-time hygiene, leakage control and label design determine results before any learner is chosen.",
+   "why": "Learner choice moves results by basis points; data and label choices move them by whole Sharpe units — usually by silently inflating them. The asymmetry is vicious: data errors almost never make a backtest look worse. A research process that spends 80% of its effort on data engineering and 20% on modelling has the proportions right; most newcomers run the inverse.",
+   "x": [
+    "d-pit",
+    "d-leak",
+    "d-label",
+    "d-meta"
+   ]
+  },
+  {
+   "id": "d-pit",
+   "p": "d",
+   "l": "Point-in-time data & survivorship",
+   "b": "d",
+   "sum": "Every field must be as-known-at-the-time: restated fundamentals, backfilled histories, index membership and dead tickers are the classic silent inflators of backtest alpha.",
+   "why": "Survivorship bias — testing on today's universe — deletes exactly the names that went to zero, mechanically flattering long signals and value signals especially. Lookahead in fundamentals is subtler: databases overwrite preliminary figures with restatements, so a backtest \"knows\" the clean number weeks or quarters before the market did. Both biases are invisible in the code; they live in the vendor tables.",
+   "rule": "Requirements: point-in-time fundamentals (as-first-reported snapshots with announcement dates); a universe reconstructed per date from historical constituent lists including delistings; delisting returns applied — omitting them materially overstates small-cap and low-price strategy returns; and lagging every accounting item to its public availability date, not its fiscal date.",
+   "hf": "This is why data engineering dominates quant headcount. Standard diligence on any new dataset: when was each row knowable, has history been backfilled, do identifiers survive ticker changes and mergers, and does coverage begin recently enough that the backtest is really a bull-market sample.",
+   "cites": [
+    [
+     "Shumway",
+     "The Delisting Bias in CRSP Data, JF 52(1), 1997",
+     "Paper"
+    ],
+    [
+     "Compustat Point-in-Time / snapshot data",
+     "As-first-reported fundamentals with availability dates",
+     "Method"
+    ]
+   ],
+   "x": [
+    "d-leak",
+    "v-proto",
+    "d-alt"
+   ]
+  },
+  {
+   "id": "d-leak",
+   "p": "d",
+   "l": "Leakage — how the future gets in",
+   "b": "d",
+   "sum": "A taxonomy of the ways test-set information contaminates training: full-sample preprocessing, overlapping labels, centered windows, cross-fold target encoding, universes selected on future liquidity.",
+   "why": "Leakage is the most common cause of the too-good backtest, and it is not one bug but a family. Fitting a scaler, PCA or feature selection on the full sample leaks distributional information; a label measured over days t to t+10 leaks into a training set containing day t+5; a \"liquid universe\" chosen by average volume over the whole sample includes names that became liquid because they went up.",
+   "rule": "Discipline: every transform — imputation, scaling, selection, dimensionality reduction, hyperparameter choice — is fit inside the training fold only and applied frozen to the test fold. Labels that span time require purging (drop training samples whose label window overlaps the test window) and an embargo after the test block. Universe and cost assumptions are reconstructed point-in-time like any other feature.",
+   "hf": "The desk smell test: a daily-frequency equity signal backtesting above Sharpe 3 without a microstructure or capacity story has leakage until proven otherwise. The fastest audit is always the same — trace one prediction date and hand-verify that every input was knowable that morning.",
+   "cites": [
+    [
+     "López de Prado",
+     "Advances in Financial Machine Learning, Wiley 2018 — chs. 7–8 on purging and embargo",
+     "Book"
+    ]
+   ],
+   "x": [
+    "v-cv",
+    "d-uniq",
+    "a-nlp"
+   ]
+  },
+  {
+   "id": "d-alt",
+   "p": "d",
+   "l": "Alternative data & the input frontier",
+   "b": "d",
+   "sum": "Credit-card panels, satellite imagery, web-scraped prices, app usage, job postings, filings and call transcripts: the frontier where edge comes from being early to a dataset rather than clever with a model.",
+   "why": "When everyone runs gradient boosting on the same Compustat/CRSP panel, the model is not the differentiator; the input is. Alternative data alpha follows the same decay law as any other — exclusivity erodes as vendors sell more seats — so the durable capability is the pipeline that evaluates and onboards new datasets quickly, not any single dataset.",
+   "rule": "Evaluation checklist: coverage (how much of the tradable universe does it map to), history (short histories cannot be honestly backtested — a 3-year dataset has seen one regime), point-in-time integrity (was the panel recomposed retroactively; card panels drift as the member base changes), entity mapping (joining raw data to tickers is half the work), and incremental value against existing signals rather than standalone IC.",
+   "hf": "Buy-side data-sourcing teams triage hundreds of vendors a year; the modal outcome is rejection on PIT or mapping grounds before any signal work begins. Trial structure matters: backtests supplied by vendors are tier-bottom evidence by construction.",
+   "x": [
+    "a-nlp",
+    "d-pit",
+    "f-adapt"
+   ]
+  },
+  {
+   "id": "d-feat",
+   "p": "d",
+   "l": "Feature engineering conventions",
+   "b": "d",
+   "sum": "Cross-sectional ranks, z-scores against trailing history, sector and beta neutralization, winsorization: financial features are engineered for stationarity and comparability, not left raw.",
+   "why": "Raw prices, volumes and fundamentals are non-stationary and scale-heterogeneous; a learner fed raw levels spends its capacity rediscovering that Apple is large. Rank and z-score transforms move every feature onto a stable, comparable scale each date, which is both a stationarity fix and an implicit robustness prior — ranks are immune to outliers and to slow drift in the cross-sectional distribution.",
+   "rule": "The standard pipeline per date: winsorize or clip tails; transform to cross-sectional ranks or z-scores; neutralize against known factors (sector, size, beta) when the target is residual alpha rather than factor exposure; and lag conservatively so the feature respects information timing. Neutralization is a modelling decision, not hygiene — the same signal raw and neutralized are different products with different capacity and different crowding.",
+   "hf": "Feature stores are keyed by (date, asset) with PIT guarantees and explicit availability lags. Desks version features like code: a change to a winsorization threshold is a research event with a backtest diff, because downstream models are sensitive to exactly the choices that look cosmetic.",
+   "x": [
+    "d-stat",
+    "a-cs",
+    "p-fac"
+   ]
+  },
+  {
+   "id": "d-label",
+   "p": "d",
+   "l": "Labels: fixed horizon vs triple barrier",
+   "b": "d",
+   "sum": "What you predict matters as much as how: fixed-horizon returns ignore the path; López de Prado's triple-barrier method labels by which of profit-take, stop-loss or expiry is hit first, matching how positions are actually managed.",
+   "why": "A fixed 10-day return label treats a trade that grinds up 2% and one that drops 8% before recovering to +2% as identical, though no risk-managed book would experience them identically. Labels define the learning target; if the target ignores path, the model is optimized for a strategy nobody runs.",
+   "rule": "Triple barrier: set an upper barrier (profit-take) and lower barrier (stop) — usually symmetric multiples of current volatility — plus a vertical barrier (maximum holding period). The label is the first barrier touched (+1, −1, or the sign/zero at expiry). Barriers scale with estimated vol so the label measures risk-adjusted, path-aware outcome.",
+   "pro": "Labels finally match trade management; vol-scaling makes classes balanced and comparable across regimes and assets.",
+   "skep": "The barriers are three more hyperparameters entering before the first model is fit — more surface for overfitting; a vol-scaled fixed-horizon label captures most of the benefit with less machinery.",
+   "ver": "Widely adopted in the AFML-influenced cohort; older desks mostly retain vol-normalized fixed-horizon labels. The consensus core: labels must be vol-adjusted and horizon-explicit; path-awareness is the optional layer.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML ch. 3 — Labeling; triple-barrier method",
+     "Book"
+    ]
+   ],
+   "x": [
+    "d-meta",
+    "a-bet",
+    "d-uniq"
+   ]
+  },
+  {
+   "id": "d-meta",
+   "p": "d",
+   "l": "Meta-labelling",
+   "b": "d",
+   "sum": "Separate the side from the size: a primary model (or rule, or human) decides direction; a secondary ML model predicts whether that bet will pay, and therefore how big it should be. One of AFML's most adopted ideas.",
+   "why": "Predicting direction is hard; predicting whether a given, already-specified strategy will win its next trade is an easier, better-posed binary problem with a meaningful base rate. Meta-labelling also cleanly layers ML onto non-ML strategies — the primary can be a trend rule or a discretionary PM — and converts the ML contribution into precision (fewer bad trades taken) rather than recall.",
+   "rule": "Mechanics: run the primary strategy historically; label each signal 1 if the triple-barrier outcome was profitable, 0 otherwise; train a classifier on features available at signal time (regime, vol, signal strength, crowding proxies); use predicted probability to size — below threshold, skip; above, scale by confidence.",
+   "hf": "Deployed as overlays on trend and systematic-macro books, and as gates on discretionary trade tickets. Attractive governance property: the primary strategy stays fully interpretable; the black box only modulates size, bounding the damage any ML failure can do.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML ch. 3 — Meta-labeling",
+     "Book"
+    ],
+    [
+     "Joubert",
+     "Meta-Labeling: Theory and Framework, J. Financial Data Science, 2022",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "d-label",
+    "a-bet",
+    "s-ens"
+   ]
+  },
+  {
+   "id": "d-uniq",
+   "p": "d",
+   "l": "Overlapping samples & uniqueness",
+   "b": "d",
+   "sum": "Daily-sampled labels over multi-day horizons overlap heavily, so \"10,000 observations\" may carry the information of a few hundred independent ones. Effective sample size, not row count, is what the learner sees.",
+   "why": "Two samples whose label windows share nine of ten days are nearly the same observation; standard IID machinery (bootstrap, CV, standard errors) treats them as independent and becomes overconfident exactly in proportion to the overlap. This is a major reason financial backtest statistics flatter: the denominator in every t-stat is inflated.",
+   "rule": "AFML's machinery: compute each sample's average uniqueness (the share of its label window not shared with concurrent samples); weight training samples by uniqueness; replace naive bootstrap with sequential bootstrap that draws low-overlap samples; and discount reported statistics by effective — not nominal — sample size.",
+   "hf": "Even shops that skip the formal machinery respect the principle: sample at the horizon frequency (weekly labels, weekly samples), or accept that the model's real information base is far thinner than the row count suggests.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML ch. 4 — Sample weights, uniqueness, sequential bootstrap",
+     "Book"
+    ]
+   ],
+   "x": [
+    "v-cv",
+    "f-snr",
+    "d-label"
+   ]
+  },
+  {
+   "id": "d-stat",
+   "p": "d",
+   "l": "Stationarity & fractional differentiation",
+   "b": "d",
+   "sum": "Full differencing (returns) achieves stationarity by erasing nearly all memory; fractional differentiation applies the minimum differencing dose that passes a stationarity test, preserving long-range structure.",
+   "why": "Prices are non-stationary but memory-rich; returns are stationary but nearly memoryless. The standard transform therefore throws away most of what a model might learn from. Fractional differencing (order d between 0 and 1, chosen as the smallest d passing an ADF test) is the principled compromise — a series stationary enough to learn from that still remembers where it came from.",
+   "rule": "Implementation: fixed-width window fractional differencing (FFD); sweep d, take the minimum that rejects the unit root. Typical d for equity prices lands around 0.3–0.6 — far from the d=1 that log-returns impose.",
+   "pro": "Theoretically clean; recovers real predictive structure that differencing destroys.",
+   "skep": "In practice cross-sectional ranks and z-scores deliver most of the stationarity benefit with zero machinery, and d becomes one more tuned parameter feeding the multiple-testing bill.",
+   "ver": "Intellectually influential, selectively adopted: common in time-series/futures work, rare in cross-sectional equity pipelines where per-date ranking already solves the comparability problem.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML ch. 5 — Fractionally differentiated features",
+     "Book"
+    ],
+    [
+     "Hosking",
+     "Fractional Differencing, Biometrika 68(1), 1981",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "d-feat",
+    "f-nonstat"
+   ]
+  },
+  {
+   "id": "s",
+   "p": "root",
+   "l": "III · Learners",
+   "b": "s",
+   "sum": "The supervised and unsupervised toolbox as it actually ranks on financial tabular data: regularized linear models as the baseline to beat, boosted trees as the workhorse, nets where structure demands them, ensembles everywhere.",
+   "why": "Method choice in finance is about matching inductive bias to a low-SNR tabular world, not about importing the newest architecture. The empirical ordering is remarkably stable across studies: regularized linear is hard to beat honestly; tree ensembles add real but modest value; deep nets pay their way only when the data has exploitable structure (sequence, text, surface) or the objective is non-standard. Any pitch inverting this ordering should arrive with extraordinary evidence.",
+   "x": [
+    "s-lin",
+    "s-gbm",
+    "s-nn",
+    "s-ens"
+   ]
+  },
+  {
+   "id": "s-lin",
+   "p": "s",
+   "l": "Regularized linear models",
+   "b": "s",
+   "sum": "Ridge, lasso and elastic net are the baseline most financial ML fails to beat honestly: linear in parameters, shrinkage priors matched to weak signals, interpretable, cheap, and stable across regimes.",
+   "why": "Shrinkage is the correct prior for markets — most candidate predictors have effects near zero, so an estimator biased toward zero wins on variance. The ridge/lasso choice encodes a belief about signal structure: lasso assumes few strong predictors (rarely true in return prediction), ridge assumes many tiny correlated ones (usually true), elastic net hedges. In GKX and most replications, well-tuned penalized linear models capture a large fraction of what any method achieves.",
+   "rule": "Practice: standardize features per date; tune the penalty by purged CV; prefer ridge or elastic net over pure lasso for dense weak signals; treat coefficients as shrunk portfolio weights on signals, which is exactly what they are. A linear model on well-engineered, rank-transformed features embodies more domain knowledge than a deep net on raw inputs.",
+   "hf": "The institutional role: benchmark and default. Any nonlinear model must beat the tuned elastic net out-of-sample by more than the noise band to justify its opacity and operational cost — a bar that filters out most of them.",
+   "cites": [
+    [
+     "Hastie, Tibshirani & Friedman",
+     "Elements of Statistical Learning — ch. 3, shrinkage methods",
+     "Book"
+    ],
+    [
+     "Gu, Kelly & Xiu",
+     "RFS 2020 — penalized linear benchmarks",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-bv",
+    "a-comb",
+    "s-tune"
+   ]
+  },
+  {
+   "id": "s-tree",
+   "p": "s",
+   "l": "Decision trees (CART)",
+   "b": "s",
+   "sum": "Axis-aligned splits, automatic interactions, native handling of mixed scales, missing values and outliers: trees fit tabular finance naturally — and overfit catastrophically alone. They exist to be ensembled.",
+   "why": "A single deep tree is a low-bias, huge-variance estimator — the worst possible profile for low-SNR data; its splits near the leaves are fit to noise by construction. But the tree's inductive bias (piecewise-constant, threshold-and-interaction logic) matches how many financial effects behave — momentum works until crowding flips it; value works conditional on quality — which is why tree ensembles rather than raw trees became the tabular workhorse.",
+   "rule": "CART mechanics: greedy recursive splits minimizing impurity; complexity controlled by depth, minimum leaf size and pruning. In financial use the controls are set brutally tight — depth 2–4 captures most learnable interaction structure; anything deeper is noise-fitting.",
+   "x": [
+    "s-rf",
+    "s-gbm"
+   ]
+  },
+  {
+   "id": "s-rf",
+   "p": "s",
+   "l": "Bagging & random forests",
+   "b": "s",
+   "sum": "Bootstrap-aggregated trees with random feature subsetting: variance reduction almost for free, near-tune-free defaults, honest internal validation via out-of-bag estimates. López de Prado's default learner throughout AFML.",
+   "why": "Averaging many decorrelated overfit trees cancels their noise while keeping their signal — variance reduction aimed at exactly the binding constraint of the domain. Feature subsetting decorrelates the trees; bagging supplies the averaging. The result is robust, hard to break, and parallelizable — which is why it remains the default when researcher time, not accuracy, is scarce.",
+   "rule": "Financial caveats: bootstrap resampling assumes independent samples, which overlapping labels violate — hence AFML's sequential bootstrap and per-sample uniqueness weights; out-of-bag scores are optimistic under overlap for the same reason, so purged CV still governs. Class-weight or sample-weight by uniqueness rather than dropping data.",
+   "hf": "Typical uses: meta-labelling classifiers, feature triage before more expensive models, and bet-sizing overlays. Frequently retained in production over marginally better boosted models because its failure modes are milder and its retuning burden near zero.",
+   "cites": [
+    [
+     "Breiman",
+     "Random Forests, Machine Learning 45(1), 2001",
+     "Paper"
+    ],
+    [
+     "López de Prado",
+     "AFML chs. 4–6 — sequential bootstrap, bagging vs boosting in finance",
+     "Book"
+    ]
+   ],
+   "x": [
+    "d-uniq",
+    "s-fi",
+    "s-gbm"
+   ]
+  },
+  {
+   "id": "s-gbm",
+   "p": "s",
+   "l": "Gradient boosting (XGBoost / LightGBM)",
+   "b": "s",
+   "sum": "Sequential trees fit to residuals: the industry workhorse on tabular alpha problems — when tuned with restraint. Shallow trees, low learning rates, early stopping, monotonic constraints where priors exist.",
+   "why": "Boosting reduces bias where bagging reduces variance, so it can extract structure forests miss — and can therefore also fit noise more aggressively; the discipline is inverted relative to deep learning: in finance you tune boosting toward less capacity, not more. The tabular-supremacy literature (Grinsztajn et al.) confirms what desks observe: on medium-sized tabular datasets, tuned boosted trees still beat deep nets, and finance data is exactly that regime.",
+   "rule": "The restrained configuration: depth 2–4, learning rate 0.01–0.05, heavy row/column subsampling, early stopping on a purged validation fold, and monotonic constraints to encode economic priors (e.g., cheaper must not predict lower forward return within the model's logic). LightGBM's ranking objectives (LambdaRank) fit the cross-sectional problem directly — rank prediction is the actual task.",
+   "hf": "The modal production alpha model at systematic equity shops: LightGBM on hundreds of rank-transformed features, retrained on a rolling schedule, averaged over seeds and windows. The gains over elastic net are real but measured in single IC points — meaningful at scale, invisible in a noisy year.",
+   "cites": [
+    [
+     "Friedman",
+     "Greedy Function Approximation: A Gradient Boosting Machine, Annals of Statistics, 2001",
+     "Paper"
+    ],
+    [
+     "Chen & Guestrin",
+     "XGBoost, KDD 2016; Ke et al., LightGBM, NeurIPS 2017",
+     "Paper"
+    ],
+    [
+     "Grinsztajn, Oyallon & Varoquaux",
+     "Why do tree-based models still outperform deep learning on tabular data?, NeurIPS 2022",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "s-tune",
+    "s-fi",
+    "a-cs",
+    "f-bv"
+   ]
+  },
+  {
+   "id": "s-nn",
+   "p": "s",
+   "l": "Neural nets on tabular data",
+   "b": "s",
+   "sum": "On pure cross-sectional tabular problems, shallow regularized MLPs roughly match — rarely dominate — boosted trees: GKX found shallow nets their best performer, but the margin over trees and elastic net was modest. Nets earn their complexity elsewhere.",
+   "why": "The theoretical pitch — universal approximation, learned feature interactions — collides with low SNR: the capacity that would learn rich structure instead memorizes noise unless regularized down to something functionally close to a shrunk linear model. Notably, GKX's winner was a 3-layer net, and performance declined with depth; in finance, \"deep\" learning is usually shallow learning with dropout.",
+   "rule": "When nets do pay: structured inputs (sequences, text, images, vol surfaces), multi-task learning across related targets, custom differentiable objectives (Sharpe, utility, hedging cost) that trees cannot optimize directly, and as components in end-to-end pipelines. When they don't: a few hundred tabular features on monthly horizons, where the tooling and instability tax exceeds the accuracy gain.",
+   "hf": "Production reality: heavy seed-averaging (net trainings are noisy), strict early stopping, and ensembling with tree and linear models rather than replacing them. Desks report the net's marginal value concentrates in interactions among nonlinear features — exactly where priors are weakest, so validation discipline matters most.",
+   "cites": [
+    [
+     "Gu, Kelly & Xiu",
+     "RFS 2020 — NN1–NN5 comparisons; shallow beats deep",
+     "Paper"
+    ],
+    [
+     "Grinsztajn et al.",
+     "NeurIPS 2022 — tabular benchmark evidence",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "s-seq",
+    "p-e2e",
+    "a-gkx"
+   ]
+  },
+  {
+   "id": "s-seq",
+   "p": "s",
+   "l": "Sequence & attention models",
+   "b": "s",
+   "sum": "LSTMs, temporal CNNs and transformers for path-dependent problems: order books, intraday microstructure, execution, vol surfaces. In liquid daily data the sequence advantage over engineered features is usually small.",
+   "why": "Sequence models earn their keep where the raw data has temporal structure too rich to hand-engineer — limit-order-book dynamics, high-frequency price paths, sequences of corporate events. At daily and monthly horizons, decades of feature engineering (momentum windows, vol estimators, seasonality dummies) have already extracted most path information; a recurrent net rediscovering the 12-1 momentum feature is expensive archaeology.",
+   "rule": "Where the evidence is real: DeepLOB-style CNN/LSTM architectures on order books predict short-horizon mid-price moves; temporal convolutions in execution models; transformers in derivatives and vol-surface applications. Attention weights as \"interpretability\" are mostly cosmetic — attribution still requires the standard tooling.",
+   "hf": "The buy decision is horizon-dependent: HFT and e-trading desks run sequence models routinely; mid-frequency equity desks mostly do not, having found engineered features plus boosted trees capture the same information more robustly.",
+   "cites": [
+    [
+     "Zhang, Zohren & Roberts",
+     "DeepLOB: Deep Convolutional Networks for Limit Order Books, IEEE Trans. Signal Processing, 2019",
+     "Paper"
+    ],
+    [
+     "Vaswani et al.",
+     "Attention Is All You Need, NeurIPS 2017",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "k-hedge",
+    "a-nlp",
+    "s-nn"
+   ]
+  },
+  {
+   "id": "s-unsup",
+   "p": "s",
+   "l": "Unsupervised: PCA, clustering, autoencoders",
+   "b": "s",
+   "sum": "The quiet workhorses: PCA for statistical risk factors and denoising, clustering for asset taxonomies and hierarchical allocation, autoencoders as nonlinear factor models with a formal asset-pricing variant.",
+   "why": "Unsupervised methods avoid the domain's central trap — they never touch the return label, so they cannot overfit it. Estimating covariance structure, market taxonomy or regime geometry is statistically far easier than predicting returns, which is why the unsupervised layer of a quant stack (risk factors, cluster maps) is more reliable than the supervised layer sitting on top of it.",
+   "rule": "The canon: PCA on the correlation matrix yields statistical factors (first component ≈ market; next components ≈ sector/style-like structure); Marchenko–Pastur thresholds from random matrix theory separate signal eigenvalues from noise; hierarchical clustering on correlation distance builds the trees that HRP allocates over; autoencoders generalize PCA nonlinearly — Gu–Kelly–Xiu's autoencoder asset pricing model ties latent factors to characteristics with an economic interpretation.",
+   "hf": "Every statistical risk model in production is PCA with engineering around it; cluster maps drive diversification constraints and pair-selection; autoencoder factors remain mostly research-tier, adopted where they demonstrably beat linear factors on hedging error.",
+   "cites": [
+    [
+     "Marchenko & Pastur",
+     "Distribution of eigenvalues in random matrices, 1967 — via Bouchaud & Potters, A First Course in Random Matrix Theory, 2020",
+     "Book"
+    ],
+    [
+     "Gu, Kelly & Xiu",
+     "Autoencoder Asset Pricing Models, J. Econometrics 222(1), 2021",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "p-cov",
+    "p-hrp",
+    "k-regime",
+    "k-fac"
+   ]
+  },
+  {
+   "id": "s-ens",
+   "p": "s",
+   "l": "Ensembling & stacking",
+   "b": "s",
+   "sum": "Averaging across models, seeds, windows and horizons is the closest thing financial ML has to a free lunch: variance reduction aimed exactly at the domain's binding constraint.",
+   "why": "Ensemble gains are largest when base learners are individually noisy and mutually decorrelated — a description of every financial model. The forecast-combination literature adds a sobering regularity: simple averages routinely beat \"optimal\" combination weights, because the combination weights are themselves estimated with error (\"the forecast combination puzzle\"). The lesson compounds in finance, where the meta-model in a stacking scheme sees only a few hundred effective observations.",
+   "rule": "The practical hierarchy: seed and window averaging (always); cross-model averaging of linear + trees + net (usually); rank-averaging rather than level-averaging when models are calibrated differently; stacking with a regularized, simple meta-learner (occasionally, with purged CV at the meta level); complex meta-learners (rarely — the meta-model overfits faster than the base models).",
+   "hf": "Production alpha is almost always an ensemble: over retraining dates (staggered models vote), over seeds, over signal families. The blend of many alphas into one book is formally the same problem and is handled by portfolio construction — see the cross-reference.",
+   "cites": [
+    [
+     "Timmermann",
+     "Forecast Combinations, Handbook of Economic Forecasting, 2006",
+     "Survey"
+    ],
+    [
+     "Breiman",
+     "Bagging Predictors, Machine Learning 24(2), 1996",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-bv",
+    "a-comb",
+    "s-rf"
+   ]
+  },
+  {
+   "id": "s-fi",
+   "p": "s",
+   "l": "Feature importance & interpretation",
+   "b": "s",
+   "sum": "MDI is biased and in-sample; permutation importance (MDA) is better but still correlational; SHAP gives consistent local attributions. All three mislead under correlated features, where substitution effects split credit arbitrarily.",
+   "why": "Importance tools answer \"what did this model use,\" not \"what drives returns\" — a distinction that evaporates in slide decks. With correlated features (most financial features), a model can shift weight between substitutes freely; one seed's \"top feature\" is another's tenth. Treating importance rankings as economic discoveries is a quiet form of overfitting narration.",
+   "rule": "Hygiene: compute MDA out-of-sample with purged CV, never in-sample MDI alone; cluster correlated features first and attribute at the cluster level (AFML's clustered importance); check stability across seeds and windows before believing any ranking; use SHAP for local explanation of specific positions rather than global economic claims.",
+   "hf": "The institutional use is triage and monitoring, not science: importance drift between retrains is an early-warning signal that the model has rotated onto something new — worth investigating before the P&L explains it the hard way.",
+   "cites": [
+    [
+     "Lundberg & Lee",
+     "A Unified Approach to Interpreting Model Predictions (SHAP), NeurIPS 2017",
+     "Paper"
+    ],
+    [
+     "López de Prado",
+     "AFML ch. 8; Machine Learning for Asset Managers, 2020 — clustered feature importance",
+     "Book"
+    ]
+   ],
+   "x": [
+    "s-tune",
+    "f-prior",
+    "k-mrisk"
+   ]
+  },
+  {
+   "id": "s-tune",
+   "p": "s",
+   "l": "Tuning & model selection",
+   "b": "s",
+   "sum": "Hyperparameter search is where backtest overfitting enters through the side door: every configuration tried is a trial that must be counted, and the CV inside the search must respect time and overlap like everything else.",
+   "why": "A modest grid — 5 depths, 5 learning rates, 4 windows, 3 label definitions — is 300 trials before the researcher \"has done anything.\" Each trial consumes evidential budget under the multiple-testing arithmetic, and tools that automate search (Optuna sweeps, AutoML) automate the consumption. The search that found the winner is part of the experiment and must be reported with it.",
+   "rule": "Discipline: fix as much as possible by prior before touching data (architecture class, feature set, label); search small grids over the few parameters that matter; use purged CV inside the search and a never-touched outer set for the final read; log every configuration to the trial registry; and prefer parameters stable across neighboring values — a sharp peak in CV performance is a noise artifact, not a discovery.",
+   "hf": "Mature shops constrain researcher degrees of freedom structurally: standard pipelines with locked preprocessing, standard grids, and DSR accounting wired into the research platform so the trial count is recorded by the machine rather than remembered by the human.",
+   "cites": [
+    [
+     "Bailey & López de Prado",
+     "Deflated Sharpe Ratio, JPM 2014 — trial-count correction",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-multi",
+    "v-cv",
+    "v-proto"
+   ]
+  },
+  {
+   "id": "a",
+   "p": "root",
+   "l": "IV · Alpha Modelling",
+   "b": "a",
+   "sum": "From features to a forecast worth money: cross-sectional ranking machines, information coefficients and breadth, signal combination, sizing — and the measured evidence on what ML actually adds.",
+   "why": "Alpha modelling is where the ML machinery meets its economic scoreboard. The unit of progress is not test-set accuracy but the information ratio of the implemented book, which decomposes into skill (IC), breadth (independent bets), and the efficiency of turning forecasts into positions. ML typically moves the first term by a few points and the second by enabling more instruments per researcher; it does not repeal the arithmetic.",
+   "x": [
+    "a-cs",
+    "a-ic",
+    "a-gkx",
+    "a-bet"
+   ]
+  },
+  {
+   "id": "a-cs",
+   "p": "a",
+   "l": "Cross-section vs time series",
+   "b": "a",
+   "sum": "The canonical setup is cross-sectional: predict relative returns across the universe each date, market-neutralized. Time-series prediction of index levels is a different, lower-breadth, much harder game.",
+   "why": "Cross-sectional prediction has two structural advantages: differencing across assets removes the common market component — the largest and least predictable term — and the panel multiplies effective sample size (3,000 stocks × 300 months). Time-series calls on the S&P have neither: one asset, one path, breadth of one. Most credible \"ML predicts returns\" results are cross-sectional rankings; most disappointments are level forecasts.",
+   "rule": "The template: each date, features per asset are rank-transformed; the model predicts next-period relative performance; output is a ranking consumed as a long-short portfolio or as views into an optimizer. Time-series models retain a real but narrower franchise — trend/momentum in futures, vol forecasting, regime gating — where persistence, not cross-sectional relative value, is the exploitable structure.",
+   "hf": "Desks keep the two books separate: a cross-sectional stat-arb book hedged to factors, and time-series overlays (trend, carry, vol) at the allocation layer. Conflating them — using a cross-sectional model to time the market — is a category error seen mostly in pitch decks.",
+   "x": [
+    "a-ic",
+    "d-feat",
+    "k-vol"
+   ]
+  },
+  {
+   "id": "a-ic",
+   "p": "a",
+   "l": "IC, breadth & the fundamental law",
+   "b": "a",
+   "sum": "The information coefficient — correlation of forecast with outcome — runs 0.02–0.10 in professional practice; the fundamental law, IR ≈ IC · √breadth · TC, converts that thin edge into fund-level economics.",
+   "why": "Grinold's fundamental law is the accounting identity of active management: skill per bet (IC), number of genuinely independent bets (breadth), and the transfer coefficient (TC — how much of the forecast survives constraints and costs into actual positions). It disciplines ML claims instantly: a model raising IC from 0.03 to 0.04 on the same breadth is a one-third improvement in IR — enormous; a model with IC 0.15 on daily equities is describing leakage.",
+   "rule": "Breadth is the subtle term: 3,000 stocks are not 3,000 independent bets when factor structure correlates them — effective breadth is far smaller, and signal correlation across time shrinks it further. ML raises breadth mainly by industrializing coverage (more names, more horizons, more instrument types per researcher), which is often worth more than its IC contribution.",
+   "hf": "Desk arithmetic runs backwards from a target: an IR of 2 at effective breadth 400 and TC 0.7 needs IC ≈ 0.14 concentrated — or the same IR from IC 0.05 at effective breadth 3,000. The second is the realistic shape of a modern systematic book, and explains the premium on uncorrelated new signals over marginal IC on old ones.",
+   "cites": [
+    [
+     "Grinold",
+     "The Fundamental Law of Active Management, JPM 15(3), 1989",
+     "Paper"
+    ],
+    [
+     "Grinold & Kahn",
+     "Active Portfolio Management, 2nd ed., McGraw-Hill 2000",
+     "Book"
+    ]
+   ],
+   "x": [
+    "f-snr",
+    "a-hor",
+    "a-comb",
+    "p-tc"
+   ]
+  },
+  {
+   "id": "a-hor",
+   "p": "a",
+   "l": "Horizon, decay & turnover",
+   "b": "a",
+   "sum": "Horizon choice trades signal strength against capacity and costs: short horizons carry higher IC and lower capacity; the model that wins gross often loses net. Signal decay profiles determine the trading speed the alpha can afford.",
+   "why": "Predictability concentrates at short horizons where microstructure and flow effects live, but short-horizon alpha demands turnover, and turnover is a tax collected by the market — spread, impact, borrow. Every alpha has a decay curve (how fast the forecast's information dissipates); trading faster than the decay wastes costs, slower wastes signal. The optimal holding period is a property of the signal, not a preference of the manager.",
+   "rule": "Measurement: IC by forecast lag (the alpha's decay profile); net-of-cost simulation across rebalance frequencies; capacity estimated from the AUM at which projected impact costs consume the gross spread. Slow signals (value, quality) support size but need patience and factor-risk management; fast signals (reversal, flow) are capacity-constrained toys at small AUM and impossible at large.",
+   "hf": "Portfolio-level answer: blend horizons — fast signals set the trading trajectory, slow signals set the destination portfolio; the optimizer trades toward a target that mixes them (the Gârleanu–Pedersen \"aim portfolio\" logic). This is also the honest defense of ML at slow horizons: it mostly re-ranks the same names, but even small IC on huge capacity is real money.",
+   "cites": [
+    [
+     "Gârleanu & Pedersen",
+     "Dynamic Trading with Predictable Returns and Transaction Costs, JF 68(6), 2013",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "p-tc",
+    "v-cap",
+    "a-decay"
+   ]
+  },
+  {
+   "id": "a-comb",
+   "p": "a",
+   "l": "Combining alphas",
+   "b": "a",
+   "sum": "Blending many weak signals into one forecast is itself an estimation problem: correlation-aware weighting is theoretically right and practically fragile; estimation error pushes real desks back toward shrunk, rank-based, near-equal blends.",
+   "why": "Optimal signal weights require the signals' expected ICs and their correlation matrix — both estimated from short, noisy histories, so the \"optimal\" combination inherits all of Markowitz's pathologies one level up: it overweights signals with lucky sample ICs and doubles down on unstable correlation estimates. The forecast combination puzzle (simple averages beating estimated weights) applies with full force.",
+   "rule": "Robust practice: normalize each signal to comparable scale (cross-sectional z or rank); shrink IC estimates hard toward the family mean; penalize redundancy via clustering rather than a full inverse-correlation solve; cap any signal's weight; retire signals by explicit criteria rather than letting weights drift to zero silently. Machine-learned combiners (a model over signals) work exactly as well as their validation discipline — they are stacking, with stacking's overfitting profile.",
+   "hf": "At multi-manager scale the same problem recurs one level higher — combining pods' books — and is solved the same way: shrinkage, caps, and diversification priors over trailing-Sharpe chasing.",
+   "cites": [
+    [
+     "Timmermann",
+     "Forecast Combinations, 2006 — the combination puzzle",
+     "Survey"
+    ],
+    [
+     "Paleologo",
+     "The Elements of Quantitative Investing, Wiley 2025 — signal combination under estimation error",
+     "Book"
+    ]
+   ],
+   "x": [
+    "s-ens",
+    "p-mvo",
+    "a-ic"
+   ]
+  },
+  {
+   "id": "a-gkx",
+   "p": "a",
+   "l": "The measured evidence (GKX)",
+   "b": "a",
+   "sum": "Gu–Kelly–Xiu (RFS 2020) is the benchmark study: 30,000 stocks, 94 characteristics, 1957–2016. Trees and shallow nets roughly double the out-of-sample R² of linear models, and the gains are economically large in long-short portfolio form.",
+   "why": "GKX matters because it is the cleanest public apples-to-apples horse race: same data, same validation scheme, methods from OLS through elastic net, random forests, boosting, and nets of increasing depth. Headline findings: nonlinear methods beat linear ones; shallow nets edge out trees; the winning models agree on the dominant predictors (price-trend family, liquidity, volatility); and predictability concentrates in small, illiquid, hard-to-trade names.",
+   "rule": "The numbers to remember: monthly OOS R² around 0.4% for the best models (vs ~0.1–0.2% linear); value-weighted long-short decile portfolios with reported Sharpe above 1 before costs. The concentration in illiquid names is the load-bearing caveat — the paper's alpha lives disproportionately where implementation is hardest.",
+   "skep": "The implementability critique (Avramov, Cheng & Metzker and successors): impose realistic costs, shorting constraints and a tradable universe, and much of the ML premium thins toward the familiar factor set; predictability also weakens post-2001. The academic result is real; the harvestable fraction is smaller.",
+   "ver": "Both sides are right at their chosen constraint sets. The institutional read: ML adds genuine forecasting power; converting it to net P&L at scale is a portfolio-construction and cost problem, which is where the fight actually happens.",
+   "cites": [
+    [
+     "Gu, Kelly & Xiu",
+     "Empirical Asset Pricing via Machine Learning, RFS 33(5), 2020",
+     "Paper"
+    ],
+    [
+     "Avramov, Cheng & Metzker",
+     "Machine Learning vs. Economic Restrictions: Evidence from Stock Return Predictability, Mgmt Science 69(5), 2023",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "a-voc",
+    "s-nn",
+    "s-gbm",
+    "v-cap"
+   ]
+  },
+  {
+   "id": "a-voc",
+   "p": "a",
+   "l": "The virtue-of-complexity debate",
+   "b": "a",
+   "sum": "Kelly–Malamud–Zhou claim massively overparameterized models improve return prediction even with tiny samples — \"the virtue of complexity.\" Critics attribute the gains to implicit vol-timing and benchmark choices. Genuinely open; read both sides.",
+   "why": "The claim inverts this map's core prior (shrink, simplify, average). Drawing on double-descent theory, KMZ show random-feature regressions with parameters vastly exceeding observations delivering higher OOS Sharpe in market timing than small models — arguing the ridgeless interpolation limit acts as its own regularizer and that conventional financial ML has been leaving performance on the table by staying small.",
+   "rule": "The pushback: subsequent critiques (notably Nagel's) argue the complex models' timing gains largely reflect mechanical volatility scaling and momentum-like exposures achievable with simple benchmarks, and that the comparison flatters complexity. Rebuttals contest the decomposition. The dust has not settled in either the journals or production.",
+   "pro": "Double descent is real mathematics; the empirical gains replicate under the papers' own protocols; dismissing overparameterization repeats the field's habit of importing yesterday's statistics.",
+   "skep": "The gains vanish against properly specified simple benchmarks; a framework that cannot beat vol-targeted momentum with a million parameters is a complicated way to be ordinary.",
+   "ver": "Unresolved. Desks report experiments, not wholesale adoption. The practical takeaway meanwhile: the bias–variance framing of this map is a strong default, no longer an unquestioned law — and any complexity claim must clear simple, vol-scaled benchmarks before it clears committees.",
+   "cites": [
+    [
+     "Kelly, Malamud & Zhou",
+     "The Virtue of Complexity in Return Prediction, JF 79(1), 2024",
+     "Paper"
+    ],
+    [
+     "Nagel",
+     "Critique: complex-model timing gains as implicit vol-scaling (working paper and subsequent exchange)",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-bv",
+    "a-gkx",
+    "c-kx"
+   ]
+  },
+  {
+   "id": "a-nlp",
+   "p": "a",
+   "l": "NLP & LLM signals",
+   "b": "a",
+   "sum": "Text to signal: dictionaries (Loughran–McDonald) → embeddings → LLMs reading filings, transcripts and news. Real short-horizon predictability, fast decay as adoption spreads — and a novel leakage class: the model's own training corpus.",
+   "why": "Text is the largest under-structured dataset in finance, and each NLP generation extracted a new layer: word-count sentiment, then context-aware embeddings (FinBERT), then LLMs that read a filing's redlines against last quarter's. Published results (e.g., ChatGPT news-headline scoring predicting next-day returns) confirm the information is there; the same publicity guarantees the easy versions are crowded on arrival.",
+   "rule": "The leakage class unique to LLMs: a pretrained model scoring \"historical\" text knows the future of that history through its weights — it read the 2020 news while scoring 2019 filings. Honest backtests require models with training cutoffs before the evaluation window, per-vintage models, or careful designs that neutralize entity-level memorization. This bug does not exist elsewhere in the stack and standard leakage audits do not catch it.",
+   "hf": "Production patterns: earnings-call tone-change and Q&A evasiveness scores; 10-K/10-Q diff signals; news-flow classification feeding event-driven books; LLM extraction turning unstructured disclosures into structured features for the tabular models. The durable edge is the pipeline — latency, entity mapping, cutoff hygiene — more than the language model, which everyone rents from the same three vendors.",
+   "cites": [
+    [
+     "Loughran & McDonald",
+     "When Is a Liability Not a Liability?, JF 66(1), 2011",
+     "Paper"
+    ],
+    [
+     "Lopez-Lira & Tang",
+     "Can ChatGPT Forecast Stock Price Movements?, working paper 2023",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "d-alt",
+    "d-leak",
+    "s-seq"
+   ]
+  },
+  {
+   "id": "a-bet",
+   "p": "a",
+   "l": "From forecast to bet size",
+   "b": "a",
+   "sum": "A forecast is not a position: probability calibration, then sizing — fractional Kelly, vol targeting, confidence-scaled bets. At book level, sizing errors dominate direction errors.",
+   "why": "Two books with identical directional accuracy and different sizing produce wildly different outcomes; variance drag guarantees that overbetting a true edge still ruins you. Kelly gives the growth-optimal fraction, but full Kelly assumes the edge estimate is exact — under parameter uncertainty the optimal response is fractional Kelly (half or less), which sacrifices little growth for large drawdown reduction. Meanwhile most classifiers emit scores, not probabilities; uncalibrated scores fed to a sizing rule are noise amplified.",
+   "rule": "The pipeline: calibrate model outputs to real probabilities (isotonic or Platt scaling on purged validation data); map calibrated edge to size via fractional Kelly or a utility-based rule; overlay vol targeting so book risk is constant as forecast dispersion varies; cap single-bet size unconditionally, because the model is most confident precisely where its regime assumptions break.",
+   "hf": "Moontower's framing is the right sanity check: sizing is where trading businesses live or die — a mediocre signal sized well outlasts a good signal sized badly. Meta-labelling is the ML-native implementation: direction from the primary, size from a calibrated secondary model.",
+   "cites": [
+    [
+     "Kelly",
+     "A New Interpretation of Information Rate, Bell System Tech. J., 1956",
+     "Paper"
+    ],
+    [
+     "Thorp",
+     "The Kelly Criterion in Blackjack, Sports Betting, and the Stock Market, 2006",
+     "Paper"
+    ],
+    [
+     "López de Prado",
+     "AFML ch. 10 — Bet sizing from predicted probabilities",
+     "Book"
+    ]
+   ],
+   "x": [
+    "d-meta",
+    "p-mvo",
+    "k-tail",
+    "c-moon"
+   ]
+  },
+  {
+   "id": "a-decay",
+   "p": "a",
+   "l": "Crowding & alpha decay",
+   "b": "a",
+   "sum": "Alphas are wasting assets: publication, replication and crowding erode them on a measurable schedule. Monitor live IC against backtest IC and retire signals like inventory, not heirlooms.",
+   "why": "The decay mechanism is competitive: every incremental dollar chasing a signal moves its entry prices toward fair value and its exits into other holders' stop-losses. Decay accelerates with visibility (publication, conference talks, vendor productization) and with the standardization of tooling — when the whole industry runs the same boosted trees on the same features, discovery is simultaneous and crowding is instant.",
+   "rule": "Instrumentation: rolling live IC vs backtest IC with explicit degradation thresholds; signal-level P&L attribution so decay is localized, not book-averaged; crowding proxies (short interest and borrow utilization in signal-favored names, pairwise correlation of known quant products, execution slippage trends — your own impact rising is direct evidence of neighbors). Pre-committed retirement criteria beat post-hoc rationalization; a decayed signal kept \"because it used to work\" is a fee paid to nostalgia.",
+   "hf": "Portfolio answer: a research pipeline whose discovery rate exceeds the book's decay rate is the actual asset being managed. Funds are valued on the factory, not the current signal list.",
+   "cites": [
+    [
+     "McLean & Pontiff",
+     "JF 2016 — post-publication decay",
+     "Paper"
+    ],
+    [
+     "Khandani & Lo",
+     "What Happened to the Quants in August 2007?, J. Financial Markets 14(1), 2011",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-adapt",
+    "k-crowd",
+    "v-live"
+   ]
+  },
+  {
+   "id": "p",
+   "p": "root",
+   "l": "V · Portfolio Construction",
+   "b": "p",
+   "sum": "Where forecasts meet estimation error: the covariance problem, Markowitz instability, hierarchical and denoised alternatives, cost-aware optimization — and the newer idea of learning the decision directly.",
+   "why": "Portfolio construction is the estimation-error business. Expected returns are nearly unestimable; covariances are estimable but rank-deficient at realistic dimensions; and the classical optimizer amplifies whichever errors survive. Most of the ML that matters here is not glamorous prediction but statistical repair — shrinkage, factor structure, denoising, clustering — applied so the optimizer stops weaponizing noise.",
+   "x": [
+    "p-mvo",
+    "p-cov",
+    "p-fac",
+    "p-hrp"
+   ]
+  },
+  {
+   "id": "p-mvo",
+   "p": "p",
+   "l": "Markowitz as error maximizer",
+   "b": "p",
+   "sum": "Mean–variance optimization loads maximum weight on the most misestimated inputs: unconstrained MVO with sample estimates is routinely beaten out-of-sample by the 1/N portfolio it was designed to dominate.",
+   "why": "The optimizer treats inputs as truth and seeks corners: assets with overestimated means and underestimated correlations receive extreme weights precisely because their errors point the attractive way — Michaud's \"error maximization.\" DeMiguel–Garlappi–Uppal made the embarrassment precise: across datasets, no estimated MVO variant consistently beat naive equal weight, because estimation windows long enough to pin down means exceed any stationary regime.",
+   "rule": "The repair kit, in ascending sophistication: constraints (long-only, position caps — crude but effective implicit shrinkage); robust estimators for covariance (next node); shrinking or abandoning mean estimates (minimum-variance and risk-parity portfolios exist because zero is a better mean forecast than the sample mean); resampling (Michaud); Bayesian blending of means toward equilibrium (Black–Litterman); and restructuring the problem so full-matrix inversion never happens (HRP, NCO).",
+   "hf": "Institutional MVO survives everywhere — but always caged: tight factor-exposure bounds, turnover penalties, position caps, and alpha inputs pre-shrunk to modest magnitudes. The optimizer is used as a constraint-satisfaction and netting engine, not as a truth machine.",
+   "cites": [
+    [
+     "Michaud",
+     "The Markowitz Optimization Enigma: Is Optimized Optimal?, FAJ 45(1), 1989",
+     "Paper"
+    ],
+    [
+     "DeMiguel, Garlappi & Uppal",
+     "Optimal Versus Naive Diversification, RFS 22(5), 2009",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "p-cov",
+    "p-hrp",
+    "p-bl",
+    "a-comb"
+   ]
+  },
+  {
+   "id": "p-cov",
+   "p": "p",
+   "l": "Covariance estimation & denoising",
+   "b": "p",
+   "sum": "The covariance matrix is the estimable half of the problem — but with N assets and T observations of comparable size, the sample matrix is mostly noise. Shrinkage, factor structure and random-matrix denoising are the three repair families.",
+   "why": "With N=1,000 stocks and T=250 days, the sample covariance has ~500,000 parameters estimated from 250,000 observations: singular, and its smallest eigenvalues — exactly the directions an optimizer exploits as \"hedges\" — are pure noise. Random matrix theory quantifies the damage: under the null, eigenvalues fall in the Marchenko–Pastur band; empirically, only a handful of eigenvalues of an equity correlation matrix escape it. The rest is structure-shaped noise.",
+   "rule": "The families: (1) Ledoit–Wolf shrinkage — optimally weighted average of the sample matrix and a structured target; later nonlinear shrinkage adjusts each eigenvalue separately; (2) factor models — impose K-factor structure so parameters grow linearly in N; the workhorse at scale; (3) RMT denoising — keep eigenvalues outside the MP band, replace the noise bulk with its average (López de Prado's variant fits the MP distribution to locate the cutoff). All three are forms of the same prior: true covariance has low-dimensional structure.",
+   "hf": "Practice layers them: a fundamental or statistical factor model supplies the backbone; shrinkage handles the residual block; denoising validates the factor count. The test that matters is not matrix distance but decision quality — realized volatility of the optimized portfolio and hedging error out-of-sample.",
+   "cites": [
+    [
+     "Ledoit & Wolf",
+     "Honey, I Shrunk the Sample Covariance Matrix, JPM 30(4), 2004",
+     "Paper"
+    ],
+    [
+     "Bouchaud & Potters",
+     "A First Course in Random Matrix Theory, Cambridge UP, 2020",
+     "Book"
+    ],
+    [
+     "López de Prado",
+     "Machine Learning for Asset Managers, Cambridge Elements, 2020 — denoising and detoning",
+     "Book"
+    ]
+   ],
+   "x": [
+    "p-fac",
+    "p-hrp",
+    "s-unsup",
+    "f-bv"
+   ]
+  },
+  {
+   "id": "p-fac",
+   "p": "p",
+   "l": "Factor models — the workhorse frame",
+   "b": "p",
+   "sum": "Paleologo's central lesson: the factor model is the working instrument of the equity quant — risk decomposition, hedging, portfolio construction and P&L attribution all run through it. ML refines the loadings and residuals; it does not replace the frame.",
+   "why": "A factor model turns an intractable N×N covariance into K factor variances plus idiosyncratic terms, and — equally important — turns portfolio conversations into a common language: exposures, factor P&L, idio P&L. For a fundamental PM the model defines what \"the market pays you for\" vs \"your stock-picking\"; for a systematic book it defines the hedge. The frame is so load-bearing that improvements arrive as better inputs to it rather than alternatives.",
+   "rule": "The taxonomy: fundamental models (Barra-style — loadings from observable characteristics, factor returns estimated by cross-sectional regression); statistical models (PCA — factors from the data, interpretable or not); hybrid and conditional models where ML earns its place: IPCA (Kelly–Pruitt–Su) makes loadings functions of characteristics, estimated jointly; autoencoder variants make that mapping nonlinear. Each step trades interpretability for fit; risk models stop at the step their consumers can still read.",
+   "hf": "Paleologo's practitioner heuristics travel well: understand your risk model before your alpha model; hedge the factors you are not paid for; expect half your gross P&L to be factor noise unless you actively remove it; and treat the risk model vendor's factor definitions as a crowding map — everyone else hedges the same way.",
+   "cites": [
+    [
+     "Paleologo",
+     "Advanced Portfolio Management, Wiley 2021",
+     "Book"
+    ],
+    [
+     "Kelly, Pruitt & Su",
+     "Characteristics Are Covariances: A Unified Model of Risk and Return (IPCA), JFE 134(3), 2019",
+     "Paper"
+    ],
+    [
+     "Menchero, Orr & Wang",
+     "The Barra US Equity Model (USE4), MSCI Research, 2011",
+     "Method"
+    ]
+   ],
+   "x": [
+    "k-fac",
+    "p-cov",
+    "c-gappy",
+    "d-feat"
+   ]
+  },
+  {
+   "id": "p-hrp",
+   "p": "p",
+   "l": "Hierarchical risk parity",
+   "b": "p",
+   "sum": "Cluster assets by correlation distance, then allocate down the tree by inverse variance — no matrix inversion, no expected returns, no singularity. Robust where MVO is fragile; agnostic where MVO is confident.",
+   "why": "HRP attacks Markowitz's instability at its source: the inversion of an ill-conditioned matrix. By replacing the full quadratic solve with recursive bisection over a cluster hierarchy, it uses only local, well-estimated structure — nearby correlations — and never asks the data for the fragile global quantities. López de Prado's Monte Carlo evidence shows lower out-of-sample variance than both MVO and naive risk parity under estimation error.",
+   "rule": "Mechanics: correlation → distance metric → hierarchical clustering → quasi-diagonalization (reorder assets so the matrix is block-diagonal-ish) → recursive bisection allocating inverse-variance weights between cluster halves. Extensions: HERC (Raffinot) allocates on the cluster tree with equal risk contribution; cluster count chosen by gap statistic.",
+   "pro": "Robust, intuitive, fast; encodes the true prior that markets have hierarchical structure (assets within a sector co-move); works at dimensions where MVO cannot even invert.",
+   "skep": "Ignores expected returns entirely — it is an answer to \"how do I diversify,\" not \"how do I express alpha\"; the tree is unstable period to period (small correlation changes reshuffle clusters and thus weights); and against a constrained, shrunk MVO the OOS advantage narrows substantially.",
+   "ver": "Adopted widely in asset allocation, fund-of-fund and crypto contexts where mean forecasts are hopeless and dimensions are high; inside alpha-driven equity books the caged optimizer still rules because alphas must flow to positions. The lasting influence is the idea: use clustering to respect market topology instead of pretending the full matrix is knowable.",
+   "cites": [
+    [
+     "López de Prado",
+     "Building Diversified Portfolios that Outperform Out of Sample, JPM 42(4), 2016",
+     "Paper"
+    ],
+    [
+     "Raffinot",
+     "Hierarchical Clustering-Based Asset Allocation, JPM 44(2), 2017",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "p-cov",
+    "s-unsup",
+    "p-nco"
+   ]
+  },
+  {
+   "id": "p-nco",
+   "p": "p",
+   "l": "Denoised & nested optimization (NCO)",
+   "b": "p",
+   "sum": "López de Prado's middle path: keep Markowitz, but feed it denoised inputs and solve it inside clusters first, then across clusters — quarantining estimation error instead of letting it propagate globally.",
+   "why": "The insight is that MVO's error amplification is worst across weakly-correlated blocks, where noise masquerades as diversification opportunity. Nested Clustered Optimization runs the optimizer where it is most reliable — within tight clusters of similar assets — then treats each cluster as one synthetic asset for a small, well-conditioned top-level solve. Combined with RMT denoising of each input matrix, most of MVO's machinery survives with most of its pathology removed.",
+   "rule": "Pipeline: denoise the correlation matrix (Marchenko–Pastur fit, replace noise eigenvalues); optionally detone (remove the market component to see relative structure); cluster; intra-cluster MVO; inter-cluster MVO on the reduced problem. Monte Carlo results in MLAM show large reductions in weight error versus vanilla Markowitz for both minimum-variance and maximum-Sharpe objectives.",
+   "hf": "Adoption is quiet but real in allocation contexts; the denoising step alone — cheap, model-agnostic — has spread furthest and is a defensible default before any covariance-consuming step, HRP and MVO alike.",
+   "cites": [
+    [
+     "López de Prado",
+     "Machine Learning for Asset Managers, 2020 — chs. 2, 7: denoising, NCO",
+     "Book"
+    ]
+   ],
+   "x": [
+    "p-hrp",
+    "p-mvo",
+    "p-cov"
+   ]
+  },
+  {
+   "id": "p-bl",
+   "p": "p",
+   "l": "Black–Litterman & views",
+   "b": "p",
+   "sum": "Start from equilibrium (the market portfolio's implied returns), blend in views with stated confidence, get posterior expected returns that are shrunk, consistent and optimizer-safe. The Bayesian bridge between alpha models and allocation.",
+   "why": "Black–Litterman solved MVO's worst input problem — raw mean estimates — by anchoring on reverse-optimized equilibrium returns (the means that would make the market portfolio optimal) and treating the investor's views as noisy observations updating that prior. The output means are pulled toward equilibrium in proportion to view confidence, which is exactly the shrinkage the optimizer needed all along.",
+   "rule": "For a systematic desk the natural reading: an ML alpha model is a view generator, and its purged-CV IC is the honest confidence parameter. Calibrating view uncertainty to measured IC (rather than conviction theater) makes the pipeline coherent end-to-end — weak models automatically move allocations only slightly. Idzorek's confidence-percentage formulation is the common operational variant.",
+   "hf": "BL survives most visibly in multi-asset and allocation businesses; in stat-arb equity books its role is played implicitly by alpha shrinkage plus constrained optimization, which achieves the same posterior logic without the equilibrium vocabulary.",
+   "cites": [
+    [
+     "Black & Litterman",
+     "Global Portfolio Optimization, FAJ 48(5), 1992",
+     "Paper"
+    ],
+    [
+     "Idzorek",
+     "A Step-by-Step Guide to the Black-Litterman Model, 2005",
+     "Method"
+    ]
+   ],
+   "x": [
+    "p-mvo",
+    "a-comb"
+   ]
+  },
+  {
+   "id": "p-tc",
+   "p": "p",
+   "l": "Costs, turnover & multi-period",
+   "b": "p",
+   "sum": "Transaction costs decide what survives implementation: spread plus square-root market impact, turnover penalties in the objective, and the Gârleanu–Pedersen result — trade partially toward an \"aim\" portfolio, at a speed set by cost and decay.",
+   "why": "A strategy is a sequence of portfolios, and the cost of moving between them is a first-order term that single-period optimization ignores. The empirical impact law is remarkably stable: cost per dollar scales roughly with the square root of participation (trade size relative to volume), which makes cost a concave tax — doubling size far less than doubles cost per share but quadruples total impact dollars in the book's P&L.",
+   "rule": "Gârleanu–Pedersen made the dynamic problem tractable: with quadratic costs and mean-reverting signals, the optimal policy trades a fixed fraction per period toward an aim portfolio that overweights slow-decaying signals relative to fast ones. The practical translations: never rebalance fully to today's optimum; let signal half-life set trading speed; and evaluate every alpha net of the turnover it demands — the fundamental law's TC term is where models die.",
+   "hf": "Implementation stack: pre-trade cost models calibrated to own fills; optimizer objectives with explicit linear-plus-impact cost terms; execution algos consuming the optimizer's urgency. ML's real estate here is large and uncontroversial — cost model calibration, fill prediction, venue selection — because the data is abundant and the feedback loop is fast, the opposite of the alpha problem.",
+   "cites": [
+    [
+     "Gârleanu & Pedersen",
+     "Dynamic Trading with Predictable Returns and Transaction Costs, JF 68(6), 2013",
+     "Paper"
+    ],
+    [
+     "Almgren & Chriss",
+     "Optimal Execution of Portfolio Transactions, J. Risk 3(2), 2000",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "a-hor",
+    "v-cap",
+    "a-ic"
+   ]
+  },
+  {
+   "id": "p-e2e",
+   "p": "p",
+   "l": "End-to-end / decision-aware learning",
+   "b": "p",
+   "sum": "Train the model to maximize portfolio utility directly instead of minimizing forecast error: predict-then-optimize leaves value on the table when the loss that matters is the decision's, not the forecast's.",
+   "why": "MSE weights all errors equally; the portfolio does not — an error that flips an optimizer corner costs real money while an equal-sized error elsewhere is free. Decision-aware learning (Smart Predict-then-Optimize, differentiable optimization layers like OptNet/cvxpylayers) backpropagates through the allocation step so the learner spends capacity exactly where decisions are sensitive. In principle this subsumes the forecast/construction split this branch is built on.",
+   "rule": "Mechanics: embed the (convex) portfolio problem as a differentiable layer; loss is realized utility (Sharpe, mean-variance utility, cost-adjusted return) of the resulting weights; train end-to-end. Reported gains are real in simulation and in some asset-allocation studies; the costs are equally real — one composite model to validate instead of two auditable stages, gradients through an optimizer are noisy, and attribution (\"was it the forecast or the construction?\") is lost by design.",
+   "pro": "Optimizes the actual objective; automatically learns the shrinkage the two-stage pipeline hand-tunes; the theoretically correct formulation.",
+   "skep": "Data-hungry exactly where data is scarcest (portfolio-level outcomes, not asset-level); ungovernable — no risk committee can decompose it; and the two-stage pipeline's \"inefficiency\" is mostly deliberate regularization wearing a seatbelt.",
+   "ver": "Research-frontier with early production niches (execution, hedging, small-universe allocation). The governance objection, not the math, is the binding constraint at institutional scale.",
+   "cites": [
+    [
+     "Elmachtoub & Grigas",
+     "Smart \"Predict, then Optimize\", Mgmt Science 68(1), 2022",
+     "Paper"
+    ],
+    [
+     "Agrawal et al.",
+     "Differentiable Convex Optimization Layers (cvxpylayers), NeurIPS 2019",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "s-nn",
+    "p-mvo",
+    "k-hedge"
+   ]
+  },
+  {
+   "id": "k",
+   "p": "root",
+   "l": "VI · Risk Management",
+   "b": "k",
+   "sum": "ML in the risk stack: factor models and their statistical cousins, regime detection, volatility forecasting, tails, crowding — and the model risk that ML itself introduces.",
+   "why": "Risk is where ML's fit is most natural and least advertised: vol and covariance are persistent and therefore genuinely forecastable, data is rich relative to the questions asked, and the feedback loop is fast. It is also where ML's failure modes are most expensive — a risk model that fails silently in a new regime fails exactly when it was bought for. The branch covers both directions: ML as risk tool, and ML as risk source.",
+   "x": [
+    "k-fac",
+    "k-regime",
+    "k-vol",
+    "k-mrisk"
+   ]
+  },
+  {
+   "id": "k-fac",
+   "p": "k",
+   "l": "Risk models: fundamental vs statistical",
+   "b": "k",
+   "sum": "Fundamental models (Barra-style) trade fit for interpretability; statistical models (PCA) trade interpretability for fit; hybrids and conditional models (IPCA, autoencoders) try to buy back both. A risk model must be explainable to be usable.",
+   "why": "The two families fail differently. Fundamental models miss risks their factor list omits — a new common driver (a short squeeze cohort, an AI-capex complex) is invisible until analysts add it. Statistical models catch emergent structure automatically but deliver factors labeled \"PC7,\" which no risk committee can act on and no PM will accept as an explanation for being cut. Production risk management is the art of running both and reconciling.",
+   "rule": "Practice: a fundamental model as the system of record (limits, attribution, hedging); a statistical model as the canary — variance unexplained by the fundamental model, or a statistical factor with no fundamental counterpart, is the alarm for emergent crowding. Conditional ML variants (IPCA's characteristic-driven loadings; autoencoder factors) improve time-variation capture and are graded on hedging error, the metric that pays.",
+   "hf": "The desk-level test of any risk model: does hedging the model's factors actually flatten P&L? Residual co-movement after hedging is the model telling you its factor list is stale — historically the first quantitative symptom before crowding events.",
+   "cites": [
+    [
+     "Menchero, Orr & Wang",
+     "Barra USE4, MSCI Research 2011",
+     "Method"
+    ],
+    [
+     "Kelly, Pruitt & Su",
+     "IPCA, JFE 2019",
+     "Paper"
+    ],
+    [
+     "Paleologo",
+     "Advanced Portfolio Management, 2021 — using and doubting risk models",
+     "Book"
+    ]
+   ],
+   "x": [
+    "p-fac",
+    "s-unsup",
+    "k-crowd"
+   ]
+  },
+  {
+   "id": "k-regime",
+   "p": "k",
+   "l": "Regime detection",
+   "b": "k",
+   "sum": "Hamilton's Markov-switching started it; HMMs, clustering on rolling moments and change-point methods industrialized it. Genuinely useful for gating leverage and switching ensembles — and dangerously easy to fit in hindsight.",
+   "why": "Return distributions are visibly state-dependent — vol clusters, correlations converge in stress, carry unwinds in jumps — so conditioning on state is the natural response to non-stationarity. The catch is statistical: regimes are latent, few, and slow, so a 30-year sample contains perhaps a dozen genuine transitions. A model with rich state definitions fit to a dozen events is an in-sample story wearing a Greek letter.",
+   "rule": "The toolkit: Hamilton Markov-switching for parametric two-to-three state models on returns and vol; HMMs generalizing to multivariate emissions; k-means or Gaussian-mixture clustering on rolling moment vectors as the non-parametric shortcut; online change-point detection where speed matters. Discipline: keep states few (2–3), define them on risk quantities (vol, correlation, liquidity) rather than returns, demand real-time detection lag be measured — a regime flag that arrives three weeks late is history, not signal.",
+   "hf": "Production use is almost always above the alpha layer: a regime score gates gross leverage, tightens stops, or reweights the model ensemble. Few desks let regimes flip signal signs — the transition detection is too slow and the whipsaw cost too certain.",
+   "cites": [
+    [
+     "Hamilton",
+     "A New Approach to the Economic Analysis of Nonstationary Time Series, Econometrica 57(2), 1989",
+     "Paper"
+    ],
+    [
+     "Ang & Bekaert",
+     "Regime Switches in Interest Rates / International Asset Allocation with Regime Shifts, 2002",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-nonstat",
+    "v-retrain",
+    "s-unsup"
+   ]
+  },
+  {
+   "id": "k-vol",
+   "p": "k",
+   "l": "Volatility forecasting",
+   "b": "k",
+   "sum": "Vol is the most forecastable object in finance — persistence does the heavy lifting, so GARCH and HAR set a high bar that ML clears only modestly at daily horizons. The gains concentrate intraday and on the surface.",
+   "why": "Unlike returns, vol has strong autocorrelation: today's vol predicts tomorrow's with R² in the tens of percent. That makes the incumbents formidable — GARCH captures clustering with three parameters; HAR captures the long-memory cascade with a regression on daily/weekly/monthly realized vol. ML enters a race where the simple benchmark already explains most explainable variance, so its marginal contribution is structurally small at standard horizons.",
+   "rule": "The measured picture: on daily realized vol, tuned boosted trees and LSTMs beat HAR by small, sometimes-significant margins, mostly via cross-asset information (borrowing strength from related names) and nonlinearity around vol spikes. The economically meaningful ML wins sit elsewhere: intraday vol patterns for execution, options-surface fitting and no-arbitrage interpolation, and dispersion/relative-vol forecasting across names — higher-dimensional problems where the parametric incumbents are weakest.",
+   "hf": "Risk engines still run GARCH-family or EWMA vol because auditability beats basis points in a risk number. Vol desks and options market-makers, whose P&L is the basis points, adopt ML surface models more readily — the same asymmetry as everywhere: ML lives where the loss function is money, not governance.",
+   "cites": [
+    [
+     "Corsi",
+     "A Simple Approximate Long-Memory Model of Realized Volatility (HAR), J. Financial Econometrics 7(2), 2009",
+     "Paper"
+    ],
+    [
+     "Bollerslev",
+     "Generalized Autoregressive Conditional Heteroskedasticity, J. Econometrics 31(3), 1986",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "k-tail",
+    "a-cs",
+    "s-seq"
+   ]
+  },
+  {
+   "id": "k-tail",
+   "p": "k",
+   "l": "Tail risk & EVT",
+   "b": "k",
+   "sum": "Beyond the Gaussian: extreme value theory (peaks-over-threshold, generalized Pareto tails) for VaR and expected shortfall where it matters. ML does not repeal the scarcity of tail observations — structure and stress design matter more than flexibility.",
+   "why": "Tail estimation is the one domain where more model flexibility is almost purely harmful: the events of interest number in the handfuls, so a flexible learner fits noise by construction. EVT contributes the opposite of flexibility — an asymptotic theorem (exceedances over a high threshold converge to generalized Pareto) that imposes the correct functional form, letting scarce observations estimate two parameters instead of a whole distribution.",
+   "rule": "The standard stack: filtered EVT (fit GARCH first, apply POT to standardized residuals — McNeil–Frey) for conditional VaR/ES; copulas where joint tails matter, with the caveat that Gaussian copulas notoriously understate joint extremes; and scenario/stress design as the honest admission that the historical sample does not contain the future's tails. ML's legitimate roles are peripheral: regime-conditioning the threshold, clustering historical stress episodes into scenario families, generative models for plausible-but-unseen scenarios (used with skepticism).",
+   "hf": "Desk reality: tail risk is managed by construction, not prediction — position caps, vol targeting, convexity overlays, and pre-committed deleveraging rules. The models inform the levels; the levers do the work. A fund whose tail protection is a model's forecast has a forecast, not protection.",
+   "cites": [
+    [
+     "McNeil, Frey & Embrechts",
+     "Quantitative Risk Management, 2nd ed., Princeton UP, 2015",
+     "Book"
+    ],
+    [
+     "McNeil & Frey",
+     "Estimation of Tail-Related Risk Measures for Heteroscedastic Financial Time Series, J. Empirical Finance, 2000",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "k-vol",
+    "a-bet",
+    "k-crowd"
+   ]
+  },
+  {
+   "id": "k-crowd",
+   "p": "k",
+   "l": "Crowding & the quant quake",
+   "b": "k",
+   "sum": "August 2007: market-neutral equity books lost double digits in three days while indices barely moved — the canonical demonstration (Khandani–Lo) that shared signals plus leverage create a correlated exit no individual risk model sees.",
+   "why": "Crowding is the systemic externality of everyone learning the same lessons: when many books hold the same spread trades, one fund's deleveraging is every fund's adverse price move, which triggers the next fund's risk limits — a fire-sale spiral in factor space, invisible to models trained on data from before the crowd assembled. ML standardization makes it worse: common features, common libraries and common training data synchronize discovery, so positions correlate even between funds that have never met.",
+   "rule": "Khandani–Lo's reconstruction: a rapid unwind by one or more large books propagated through the standard value/momentum/reversal factor complex; strategies rebounded within days — the losses were liquidity, not information. The durable lessons: measure your book's overlap with replicable public factors; watch borrow utilization and short interest in your own favored names; treat rising execution slippage as direct evidence of neighbors; and size leverage to survive the correlated exit, not the covariance matrix's peacetime estimate.",
+   "hf": "Modern instrumentation: factor-crowding scores from prime-broker and positioning data, pairwise correlation of known quant products' returns, and — the honest one — assuming any signal discoverable by standard tooling on standard data is already held at scale by others, and sizing accordingly.",
+   "cites": [
+    [
+     "Khandani & Lo",
+     "What Happened to the Quants in August 2007?, J. Financial Markets 14(1), 2011",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-adapt",
+    "a-decay",
+    "k-fac"
+   ]
+  },
+  {
+   "id": "k-mrisk",
+   "p": "k",
+   "l": "Model risk of ML itself",
+   "b": "k",
+   "sum": "The risk the ML stack adds: silent regime failure, unexplainable positions, unreproducible research, key-person pipelines. Governance frameworks built for pricing models (SR 11-7) strain against learned systems — interpretability is a risk control, not an aesthetic.",
+   "why": "A pricing model fails loudly — prices diverge from markets. A learned alpha model fails silently: it keeps emitting confident ranks while the world that trained it disappears, and the failure surfaces only in P&L, weeks later, unattributably. The traditional validation triad (conceptual soundness, ongoing monitoring, outcomes analysis) assumes a model whose logic can be inspected; a 2,000-tree ensemble retrained weekly requires the validation to move from the model object to the process that produces it.",
+   "rule": "What process validation looks like: locked, versioned pipelines (data → features → training → deployment) with full reproducibility of any historical prediction; challenger models running in shadow; drift monitors on inputs, importance profiles and output distributions — not just P&L; pre-committed kill criteria; and complexity budgets — the marginal Sharpe of opacity must beat the marginal cost of not understanding your own book. Interpretability tools help but do not discharge the duty: a SHAP plot of a broken model explains the breakage fluently.",
+   "hf": "The institutional failure mode is organizational: the researcher who built the pipeline leaves, the model keeps trading, and eighteen months later nobody can say why it holds what it holds. Funds that survive treat research code as production infrastructure with the same review, ownership and documentation standards.",
+   "cites": [
+    [
+     "Federal Reserve",
+     "SR 11-7: Guidance on Model Risk Management, 2011",
+     "Method"
+    ],
+    [
+     "Israel, Kelly & Moskowitz",
+     "Can Machines Learn Finance?, JIM 2020 — on interpretability constraints in practice",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "s-fi",
+    "f-hier",
+    "v-live"
+   ]
+  },
+  {
+   "id": "k-hedge",
+   "p": "k",
+   "l": "Deep hedging & RL",
+   "b": "k",
+   "sum": "Learn the hedging policy directly: neural networks trained in simulation to minimize hedging cost under transaction costs and constraints (Buehler et al.), and reinforcement learning for execution. Works where the simulator is credible; much weaker where it is not.",
+   "why": "Classical hedging (delta from a pricing model) assumes frictionless replication; real books face costs, discreteness and risk limits, and the truly optimal policy under frictions has no closed form. Deep hedging reframes the problem as policy learning: simulate market paths, let a network map state (spot, inventory, time, vol) to trades, optimize a convex risk measure of terminal P&L. The result internalizes cost-awareness — hedging less when gamma is cheap relative to costs — that practitioners previously hand-tuned.",
+   "rule": "The load-bearing assumption is the simulator: derivatives hedging qualifies because the environment (price dynamics plus known payoff) can be simulated with reasonable fidelity, and the policy's edge is robust to modest simulator error. Execution RL similarly leans on limit-order-book simulators and abundant fill data. RL on raw market P&L — \"learn to trade\" — fails the same test spectacularly: the environment cannot be simulated, exploration in live markets is unaffordable, and sample complexity exceeds all recorded history.",
+   "hf": "Adoption tracks the simulator-credibility line exactly: options market-makers and sell-side XVA desks run deep-hedging variants; execution desks run RL-tuned schedules; nobody credible runs end-to-end RL portfolio management. The pattern generalizes: in finance, RL is a tool for control problems with known physics, not for discovery problems with adversarial physics.",
+   "cites": [
+    [
+     "Buehler, Gonon, Teichmann & Wood",
+     "Deep Hedging, Quantitative Finance 19(8), 2019",
+     "Paper"
+    ],
+    [
+     "Nevmyvaka, Feng & Kearns",
+     "Reinforcement Learning for Optimized Trade Execution, ICML 2006",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "s-seq",
+    "p-e2e",
+    "p-tc"
+   ]
+  },
+  {
+   "id": "v",
+   "p": "root",
+   "l": "VII · Validation & Production",
+   "b": "v",
+   "sum": "The discipline layer: cross-validation that respects time and overlap, protocols that count trials, and the production loop of monitoring, retraining and capacity.",
+   "why": "Validation is where financial ML earns or forfeits its claim to being research rather than curve-fitting with extra steps. The mechanics (purging, embargo, combinatorial paths) are settled; the hard part is sociological — every incentive in a fund points toward believing the backtest. This branch is the checklist that stands between a good-looking simulation and other people's money.",
+   "x": [
+    "v-cv",
+    "v-cpcv",
+    "v-proto",
+    "v-live"
+   ]
+  },
+  {
+   "id": "v-cv",
+   "p": "v",
+   "l": "Purged K-fold & embargo",
+   "b": "v",
+   "sum": "Standard K-fold leaks through time: training samples whose label windows overlap the test fold carry test information. Purge the overlap, embargo the aftermath — the minimum honest CV for financial labels.",
+   "why": "A label measured over days t to t+10 shares outcomes with every sample inside that window; shuffle-based CV happily places day t+3 in training and day t+5 in test, and serial correlation of features does the rest. The result is systematic optimism invisible in the code — the single most common reason CV results evaporate in walk-forward, and walk-forward results evaporate live.",
+   "rule": "Purged K-fold (AFML): folds are contiguous time blocks; from each training set, drop every sample whose label interval overlaps the test block (purging); additionally drop a buffer after the test block (embargo, typically ~1% of the sample) to absorb serial correlation leaking backward. Fold count stays small (5–10); metrics are reported per fold so the variance across folds — usually humbling — is visible.",
+   "hf": "Wired into research platforms as the default splitter so individual researchers cannot quietly shuffle. The embargo parameter is set once, centrally, by measured autocorrelation — not per project, where it becomes another tunable.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML ch. 7 — Cross-validation in finance; purging and embargo",
+     "Book"
+    ]
+   ],
+   "x": [
+    "d-uniq",
+    "d-leak",
+    "v-cpcv"
+   ]
+  },
+  {
+   "id": "v-cpcv",
+   "p": "v",
+   "l": "CPCV & walk-forward",
+   "b": "v",
+   "sum": "A single walk-forward backtest is one draw from a path distribution — an anecdote with an equity curve. Combinatorial purged CV generates many train/test path combinations and reports the distribution of Sharpe, which is the honest object.",
+   "why": "Walk-forward's virtue (chronology) hides its vice: one path means one sequence of regime encounters, so the result is hostage to when the test period happens to start, and the researcher who reruns with a different start date is silently sampling the path distribution for a flattering draw. CPCV makes the sampling explicit and exhaustive instead of covert and selective.",
+   "rule": "Mechanics: partition the sample into G groups; form every train/test combination of choosing k test groups (with purging and embargo at each boundary); each combination yields backtest paths, and the ensemble yields a distribution of performance metrics. Report the distribution's mean, spread and worst decile — a strategy whose median path is fine but whose left tail of paths is ruinous is a regime bet wearing a Sharpe ratio.",
+   "hf": "The practical compromise at many shops: purged K-fold during research iteration (cheap), CPCV as the pre-committee gate (expensive but decisive), and a final chronological walk-forward as the presentation artifact — with everyone understanding it is theater relative to the distributional evidence.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML ch. 12 — Backtesting through cross-validation; CPCV",
+     "Book"
+    ]
+   ],
+   "x": [
+    "v-proto",
+    "f-hier",
+    "v-cv"
+   ]
+  },
+  {
+   "id": "v-proto",
+   "p": "v",
+   "l": "Research protocol & trial registry",
+   "b": "v",
+   "sum": "Pre-specified hypotheses, machine-logged trials, deflated performance statistics, and a final holdout touched exactly once: the research protocol is the institution's defense against its own incentives.",
+   "why": "Every actor in the chain is paid to believe: the researcher wants the bonus, the PM wants the allocation, the fund wants the AUM. Without structural controls, selection operates at every level — of signals, parameters, sample periods, and which backtests get shown. Harvey's presidential address said it plainly: most claimed findings in empirical finance are likely false under honest multiple-testing accounting. The protocol exists because willpower does not scale.",
+   "rule": "The components: hypothesis written before the backtest (what, why, expected mechanism, kill criteria); the platform logs every configuration executed — the trial count is machine truth, not memory; reported statistics are deflated by that count (DSR); the final holdout period is accessed once, by policy, with the result binding regardless of disappointment; and negative results are archived searchably, because the signal that failed for the last researcher is this researcher's next \"discovery.\"",
+   "hf": "Culturally hardest at exactly the shops that need it most — discretionary-turned-quant funds where research is pitch-driven. The tell of a mature process: the fraction of research that ends in documented failure. If nothing fails, nothing was tested.",
+   "cites": [
+    [
+     "Harvey",
+     "Presidential Address: The Scientific Outlook in Financial Economics, JF 72(4), 2017",
+     "Paper"
+    ],
+    [
+     "Bailey & López de Prado",
+     "Deflated Sharpe Ratio, JPM 2014",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-multi",
+    "f-hier",
+    "s-tune"
+   ]
+  },
+  {
+   "id": "v-live",
+   "p": "v",
+   "l": "Live monitoring & decay",
+   "b": "v",
+   "sum": "Expect live IC near half of backtest IC; the gap is the sum of every subtle optimism in the pipeline. Monitor forecast quality, slippage versus model, and factor drift — with kill criteria agreed before the first trade.",
+   "why": "The backtest-live gap has a stable anatomy: residual overfitting (the deflation was never quite enough), implementation friction the simulation idealized, regime drift since the research window, and the crowding your own deployment contributes to. Because the gap is expected, it must be budgeted — a strategy sized to need its backtest Sharpe is sized to fail.",
+   "rule": "The monitoring stack: live IC and hit rate against their backtest distributions (is this month a bad draw or a different distribution?); execution slippage against the pre-trade cost model; factor exposures against research assumptions; and drift monitors on input features (yesterday's data-vendor format change is today's silent nonsense forecast). Kill criteria are written into the strategy's charter at inception — drawdown, IC degradation, tracking divergence — because the person watching a dying strategy is the person least able to judge it.",
+   "hf": "The institutional pattern: a strategy graduates through paper trading → small live → scaled live, with pre-defined promotion and demotion rules at each stage. Decay is normal retirement, not scandal; the pipeline replaces what the market reclaims.",
+   "cites": [
+    [
+     "López de Prado",
+     "AFML — on backtest overfitting and live degradation",
+     "Book"
+    ]
+   ],
+   "x": [
+    "a-decay",
+    "f-hier",
+    "k-mrisk"
+   ]
+  },
+  {
+   "id": "v-retrain",
+   "p": "v",
+   "l": "Retraining & drift",
+   "b": "v",
+   "sum": "Retraining cadence is a hyperparameter of the business, not the model: match it to signal horizon and regime speed, distinguish parameter refresh from re-research, and beware chasing regimes into whipsaw.",
+   "why": "Retraining embodies a bet about non-stationarity: retrain fast and the model tracks a moving world but inherits every transient; retrain slow and it is stable but stale. The whipsaw failure is underrated — a model retrained monthly onto each new regime arrives at every party as the guests leave, systematically buying the last regime's lesson at the top of its price.",
+   "rule": "Working distinctions: parameter refresh (same pipeline, new window — routine, scheduled, cheap) versus re-research (changed features or architecture — a new trial against the registry, full validation); scheduled retraining versus triggered (drift monitors breaching thresholds) — scheduled is the default because triggers fire in crises, exactly when refitting to a panicked sample is most tempting and most wrong. Ensemble across retrain vintages so no single training date dominates; the staggered ensemble is also the cheap hedge against any one refresh landing badly.",
+   "hf": "Typical cadences: monthly-to-quarterly for cross-sectional equity models on slow features; faster only where the signal itself is fast. During market stress, mature shops freeze retraining and let the humans and the risk limits drive — the model's job in a crisis is to be predictable, not adaptive.",
+   "x": [
+    "f-nonstat",
+    "k-regime",
+    "s-ens"
+   ]
+  },
+  {
+   "id": "v-cap",
+   "p": "v",
+   "l": "Capacity & implementation shortfall",
+   "b": "v",
+   "sum": "Square-root impact sets each signal's AUM ceiling; realized Sharpe declines as size grows into it. Net-of-cost simulation with honest borrow, shorting and participation constraints is what separates paper alpha from product.",
+   "why": "Capacity is the quantity most reliably absent from impressive backtests. A signal earning 3% gross on 5% participation is a strategy; the same signal at 30% participation is a market-impact donation. Because impact scales with the square root of participation while gross alpha is fixed, every strategy has a size at which it earns exactly nothing — and marketing incentives ensure the pitch deck's AUM sits well above the research reality.",
+   "rule": "The estimation: from the strategy's turnover and the universe's dollar volume, compute participation at candidate AUM; apply a calibrated impact model (square-root with measured coefficients); find where net Sharpe crosses the hurdle. Include the unglamorous constraints — borrow availability and cost on the short side (GKX-style alpha concentrates in exactly the names that are expensive to short), locate risk, and the participation caps execution will actually honor. Fast signals fail these tests at AUM that slow signals barely notice; this, not IC, is why big funds run slow.",
+   "hf": "The honest report shows the Sharpe-vs-AUM curve, not a point. Allocators increasingly ask for it; the funds that volunteer it first are signaling exactly what the disclosure suggests.",
+   "cites": [
+    [
+     "Almgren, Thum, Hauptmann & Li",
+     "Direct Estimation of Equity Market Impact, Risk, 2005",
+     "Paper"
+    ],
+    [
+     "Frazzini, Israel & Moskowitz",
+     "Trading Costs, working paper 2018 — realized costs at institutional scale",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "p-tc",
+    "a-hor",
+    "a-gkx"
+   ]
+  },
+  {
+   "id": "c",
+   "p": "root",
+   "l": "VIII · Canon & Practitioners",
+   "b": "c",
+   "sum": "Who to read, in what order, and with what discount: the sources this map draws on, from the factor-model canon to the pseudonymous practitioners.",
+   "why": "Financial ML literature has a peculiar sorting problem: the most rigorous sources (journals) are least implementable and most decayed by publication; the most implementable (practitioner writing) is unrefereed; and the most valuable (production knowledge) is unwritten. The working solution is triangulation — academic results for what is measurable, practitioner writing for what is buildable, and the discount schedule from the hierarchy-of-evidence node applied to everything, this map included.",
+   "x": [
+    "c-gappy",
+    "c-ldp",
+    "c-kx",
+    "c-hanguk"
+   ]
+  },
+  {
+   "id": "c-gappy",
+   "p": "c",
+   "l": "Giuseppe Paleologo (Gappy)",
+   "b": "c",
+   "sum": "Axioma, Citadel, Millennium, HRT, now head of quantitative research at Balyasny: the clearest living writer on factor models, hedging and portfolio construction as actually practiced at multi-manager scale.",
+   "why": "Paleologo occupies a rare position — senior enough to know what production looks like, willing to write it down, and statistically serious about estimation error as the central fact of the discipline. Advanced Portfolio Management (2021) teaches fundamental PMs to live inside a factor-model world: exposures, hedging, sizing, drawdown control. The Elements of Quantitative Investing (2025) is the graduate course: covariance estimation, factor models, shrinkage and portfolio construction with the estimation-error problem placed at the center rather than the appendix.",
+   "rule": "The recurring Paleologo theses: everything is estimated, so everything must be shrunk; understand your risk model before your alpha model, because factor noise will otherwise be your P&L; hedging is a return-enhancing activity properly understood; and most quant failure is operational and statistical, not conceptual. His public interviews and notes carry the same signal density as the books.",
+   "hf": "For this map's purposes he is the spine of the Portfolio Construction and Risk branches — the counterweight to prediction-centric ML framings: at institutional scale, better covariance handling routinely beats better return forecasts on realized IR.",
+   "cites": [
+    [
+     "Paleologo",
+     "Advanced Portfolio Management: A Quant’s Guide for Fundamental Investors, Wiley 2021",
+     "Book"
+    ],
+    [
+     "Paleologo",
+     "The Elements of Quantitative Investing, Wiley 2025",
+     "Book"
+    ]
+   ],
+   "x": [
+    "p-fac",
+    "p-cov",
+    "k-fac"
+   ]
+  },
+  {
+   "id": "c-ldp",
+   "p": "c",
+   "l": "Marcos López de Prado",
+   "b": "c",
+   "sum": "AFML (2018) codified financial-ML hygiene — triple-barrier labels, meta-labelling, purged CV, sequential bootstrap, DSR, HRP — and named the field's central sin: backtest overfitting. Read as a hygiene manual, not a recipe book.",
+   "why": "Before AFML, the failure modes it catalogs were tribal knowledge; after it, they are a checklist, which changed the field's floor. The validation machinery (purging, embargo, CPCV, deflated statistics) is near-universally accepted and belongs in every pipeline. The constructive machinery (triple barrier, fractional differentiation, some structural-break tools) is more contested — adopted selectively, debated on complexity-vs-benefit grounds.",
+   "rule": "Reading order: Machine Learning for Asset Managers (2020, short, Cambridge Elements) first for the denoising/clustering/portfolio material; AFML for the full labeling-through-backtesting stack; the JPM papers (HRP 2016, DSR 2014, PBO 2017) as the citable cores. Discount appropriately: the books argue a strong program (ML everywhere, econometrics deprecated) that exceeds what the evidence compels; the hygiene survives any discount.",
+   "hf": "His institutional influence exceeds any specific technique: research platforms at serious shops now log trials, purge folds and deflate Sharpes as infrastructure defaults — that is the AFML legacy in production.",
+   "cites": [
+    [
+     "López de Prado",
+     "Advances in Financial Machine Learning, Wiley 2018",
+     "Book"
+    ],
+    [
+     "López de Prado",
+     "Machine Learning for Asset Managers, Cambridge UP 2020",
+     "Book"
+    ]
+   ],
+   "x": [
+    "v-cv",
+    "d-label",
+    "p-hrp",
+    "f-multi"
+   ]
+  },
+  {
+   "id": "c-kx",
+   "p": "c",
+   "l": "Bryan Kelly & Dacheng Xiu",
+   "b": "c",
+   "sum": "The academic frontier: GKX, IPCA, autoencoder asset pricing, the virtue-of-complexity program, and the field-defining Financial Machine Learning survey (2023). The map of what is measurable in the cross-section.",
+   "why": "Kelly (Yale/AQR) and Xiu (Chicago Booth) anchor the credible-academic end of the literature: large-scale, methodologically careful horse races rather than single-method advocacy. The 2023 survey is the right entry point to the entire academic corpus — it organizes methods, findings and open questions with unusual honesty about fragility. Kelly's AQR affiliation matters: the work is disciplined by implementability questions pure academics can ignore.",
+   "rule": "The arc of the program: GKX 2020 (ML beats linear in return prediction); IPCA 2019 (characteristics instruct factor loadings); autoencoders 2021 (nonlinear factor structure); virtue of complexity 2024 (overparameterization helps — the contested frontier). Read with the implementability critiques alongside; the gap between measured and harvestable predictability is the recurring theme.",
+   "cites": [
+    [
+     "Kelly & Xiu",
+     "Financial Machine Learning, Foundations and Trends in Finance, 2023",
+     "Survey"
+    ],
+    [
+     "Gu, Kelly & Xiu",
+     "Empirical Asset Pricing via Machine Learning, RFS 2020",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "a-gkx",
+    "a-voc",
+    "k-fac"
+   ]
+  },
+  {
+   "id": "c-aqr",
+   "p": "c",
+   "l": "The AQR line — sober ML",
+   "b": "c",
+   "sum": "Israel, Kelly & Moskowitz's \"Can Machines Learn Finance?\": ML helps most where data is rich relative to the question — implementation, risk, cost models — and least in raw return prediction, where economic structure remains the scarce input. The essential counterweight.",
+   "why": "The paper's contribution is a framing that survives contact with practice: finance is not a big-data problem in the dimension that matters (independent return observations), so ML's wins arrive where the data actually is big — execution records, risk estimation, cross-sectional structure — and where priors can substitute for sample size. It reads as a memo from people who deployed these methods at scale and kept notes on what paid.",
+   "rule": "The implied allocation of effort, roughly right a half-decade later: costs and execution (clear ML win), covariance and risk (clear win), cross-sectional return ranking (modest win, real at scale), market timing (near-zero win), and anything pitched as \"AI discovers alpha autonomously\" (a vendor category, not a result).",
+   "cites": [
+    [
+     "Israel, Kelly & Moskowitz",
+     "Can Machines Learn Finance?, Journal of Investment Management 18(2), 2020",
+     "Paper"
+    ]
+   ],
+   "x": [
+    "f-snr",
+    "f-prior",
+    "k-vol"
+   ]
+  },
+  {
+   "id": "c-hanguk",
+   "p": "c",
+   "l": "HangukQuant",
+   "b": "c",
+   "sum": "Pseudonymous quant researcher-engineer writing implementation-grade letters: signal research pipelines, portfolio optimization, execution and the unglamorous software between a paper and a P&L. The engineering conscience of the reading list.",
+   "why": "Most quant writing stops where implementation begins; HangukQuant's letters start there — position-keeping, data plumbing, backtest engines built rather than described, optimization code that runs. The consistent thesis: the quant stack is software, and most retail-visible strategy failure is engineering failure (leakage, bad fills modeling, silent bugs) rather than statistical subtlety. Pseudonymity has a virtue here: no product to sell, no academic incentive to oversell novelty.",
+   "rule": "Use it as the systems-level complement to this map's statistics-level content: where AFML says \"purge your folds,\" the practitioner letters show what a research platform that cannot not-purge looks like. Apply the standard unrefereed-source discount — verify derivations, test the code — which the format, unusually, makes possible.",
+   "cites": [
+    [
+     "HangukQuant",
+     "Research letters and quantitative finance essays, hangukquant.substack.com",
+     "Blog"
+    ]
+   ],
+   "x": [
+    "v-proto",
+    "a-comb",
+    "c-stack"
+   ]
+  },
+  {
+   "id": "c-moon",
+   "p": "c",
+   "l": "Moontower (Kris Abdelmessih)",
+   "b": "c",
+   "sum": "Ex-SIG options market-maker; not an ML source but the epistemic conscience: edges as an ecology, measurement over prediction, expectancy and sizing as the real game. The vol-trader lens that keeps ML researchers honest about what a forecast must clear.",
+   "why": "Option market-making is the finance discipline with the least tolerance for self-deception — edges are small, measurable per trade, and gone in months — and Moontower distills its habits: think in expectancy and distributions, respect why the trade exists (who is on the other side and why they are okay losing), and treat sizing and risk as the difference between an edge and a business. Every one of those habits transfers to ML alpha work, where the failure mode is precisely a forecast mistaken for a business.",
+   "rule": "The Moontower questions to ask any model: what is the implied edge per trade after costs, and is it consistent with the size of the inefficiency it claims to harvest? Who loses the money and why do they keep showing up? Would you notice if the edge left? — the vol-trader's version of live IC monitoring, arrived at from the practitioner side.",
+   "cites": [
+    [
+     "Abdelmessih",
+     "Moontower newsletter and Moontower.ai — options, vol and decision-making under uncertainty",
+     "Blog"
+    ]
+   ],
+   "x": [
+    "a-bet",
+    "f-adapt",
+    "a-decay"
+   ]
+  },
+  {
+   "id": "c-stack",
+   "p": "c",
+   "l": "The open-source stack",
+   "b": "c",
+   "sum": "scikit-learn, LightGBM/XGBoost, statsmodels and arch, cvxpy, skfolio/riskfolio-lib, qlib, alphalens/vectorbt: the standard toolkit — and a quiet crowding channel, since shared tooling synchronizes everyone's discoveries.",
+   "why": "The stack is genuinely excellent, which is the problem: when the whole industry's junior researchers reach for the same LightGBM defaults on the same vendor data with the same alphalens tearsheets, signal discovery is correlated across firms by construction. Tooling choices are also silent assumption choices — every backtest framework embeds fill models, cost defaults and rebalance conventions that its users inherit without deciding to.",
+   "rule": "The working map: scikit-learn for pipelines and CV scaffolding (custom splitters required for purging); LightGBM/XGBoost for the tabular workhorse; statsmodels/arch for the econometric layer (GARCH, regressions with honest errors); cvxpy for optimization, with skfolio and riskfolio-lib packaging HRP/shrinkage/CVaR construction; qlib as the most complete open research platform; alphalens-style tearsheets for signal evaluation; vectorbt for fast prototyping. Audit any framework's fill and cost assumptions before believing its output — the defaults are always optimistic.",
+   "hf": "Institutional pattern: open-source for research scaffolding, proprietary for anything touching production money — not out of pride but because the assumptions embedded in shared tools are exactly what a fund's edge consists of overriding.",
+   "cites": [
+    [
+     "Ke et al.",
+     "LightGBM, NeurIPS 2017; Chen & Guestrin, XGBoost, KDD 2016",
+     "Code"
+    ],
+    [
+     "Microsoft Research",
+     "Qlib: An AI-Oriented Quantitative Investment Platform, 2020",
+     "Code"
+    ]
+   ],
+   "x": [
+    "k-crowd",
+    "v-proto",
+    "s-gbm"
+   ]
+  }
+ ]
+}
